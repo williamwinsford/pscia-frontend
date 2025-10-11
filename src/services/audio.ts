@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiEndpoint } from '@/lib/config';
+
+const API_BASE_URL = getApiEndpoint('/audio');
 
 export interface AudioFile {
   id: number;
@@ -45,7 +47,7 @@ export interface AudioAnalysis {
 }
 
 class AudioService {
-  private baseURL = `${API_BASE_URL}/audio`;
+  private baseURL = API_BASE_URL;
 
   private async request<T>(
     endpoint: string,

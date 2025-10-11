@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiEndpoint } from '@/lib/config';
+
+const API_BASE_URL = getApiEndpoint('/accounts');
 
 export interface User {
   id: number;
@@ -29,7 +31,7 @@ export interface AuthError {
 }
 
 class AuthService {
-  private baseURL = `${API_BASE_URL}/accounts`;
+  private baseURL = API_BASE_URL;
 
   private async request<T>(
     endpoint: string,
