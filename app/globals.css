@@ -1,4 +1,4 @@
-/* Global styles for Clarity Audio - MUI only */
+/* Global styles for Up Ai - MUI only */
 
 * {
   box-sizing: border-box;
@@ -26,7 +26,7 @@ a {
   text-decoration: none;
 }
 
-/* Custom Clarity Audio theme colors */
+/* Custom Up Ai theme colors */
 :root {
   --clarity-primary: #3b82f6;
   --clarity-primary-dark: #2563eb;
@@ -114,4 +114,34 @@ a {
   color: var(--clarity-primary);
   background-color: rgba(59, 130, 246, 0.1);
   border-color: var(--clarity-primary);
+}
+
+/* Theme switching - Dark Theme */
+html.theme-dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+html.theme-dark .MuiPaper-root {
+  background-color: #1f2937;
+}
+
+html.theme-dark .MuiButton-text {
+  color: #f9fafb;
+}
+
+/* Theme switching - High Contrast Theme */
+html.theme-high-contrast body {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+html.theme-high-contrast .MuiPaper-root {
+  background-color: #ffffff;
+  border: 2px solid #000000;
+}
+
+html.theme-high-contrast .MuiButton-root {
+  border: 2px solid !important;
+  font-weight: 700 !important;
 }

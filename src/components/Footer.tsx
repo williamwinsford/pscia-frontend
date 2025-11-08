@@ -7,21 +7,16 @@ import {
   Typography, 
   Grid, 
   Link as MuiLink,
-  IconButton,
   Divider,
   Stack
 } from '@mui/material';
 import { 
-  AudioLines, 
-  Facebook, 
-  Twitter, 
-  Linkedin, 
-  Instagram,
   Mail,
   Phone,
   MapPin
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -33,10 +28,10 @@ export function Footer() {
         mt: 'auto'
       }}
     >
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Container maxWidth="lg" sx={{ pt: 6, pb: 1 }}>
         <Grid container spacing={4}>
           {/* Brand Section */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Box sx={{ mb: 3 }}>
               <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -44,17 +39,21 @@ export function Footer() {
                     sx={{
                       width: 40,
                       height: 40,
-                      borderRadius: 2,
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}
                   >
-                    <AudioLines size={24} color="white" />
+                    <Image 
+                      src="/logo-up-ai-trasnparent.png" 
+                      alt="Up Ai Logo" 
+                      width={40} 
+                      height={40}
+                      style={{ objectFit: 'contain' }}
+                    />
                   </Box>
                   <Typography variant="h5" sx={{ fontWeight: 700, color: 'white' }}>
-                    Clarity Audio
+                    Up Ai
                   </Typography>
                 </Box>
               </Link>
@@ -63,104 +62,16 @@ export function Footer() {
                 Nossa plataforma oferece transcrição precisa e análise avançada para 
                 otimizar seu fluxo de trabalho.
               </Typography>
-              
-              {/* Social Links */}
-              <Stack direction="row" spacing={1}>
-                <IconButton
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&:hover': { color: '#3b82f6' }
-                  }}
-                >
-                  <Facebook size={20} />
-                </IconButton>
-                <IconButton
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&:hover': { color: '#3b82f6' }
-                  }}
-                >
-                  <Twitter size={20} />
-                </IconButton>
-                <IconButton
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&:hover': { color: '#3b82f6' }
-                  }}
-                >
-                  <Linkedin size={20} />
-                </IconButton>
-                <IconButton
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    '&:hover': { color: '#3b82f6' }
-                  }}
-                >
-                  <Instagram size={20} />
-                </IconButton>
-              </Stack>
             </Box>
-          </Grid>
-
-          {/* Quick Links */}
-          <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
-              Links Rápidos
-            </Typography>
-            <Stack spacing={1}>
-              <MuiLink
-                component={Link}
-                href="/dashboard"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textDecoration: 'none',
-                  '&:hover': { color: '#3b82f6' }
-                }}
-              >
-                Dashboard
-              </MuiLink>
-              <MuiLink
-                component={Link}
-                href="/upload"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textDecoration: 'none',
-                  '&:hover': { color: '#3b82f6' }
-                }}
-              >
-                Upload de Áudio
-              </MuiLink>
-              <MuiLink
-                component={Link}
-                href="/chat"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textDecoration: 'none',
-                  '&:hover': { color: '#3b82f6' }
-                }}
-              >
-                Chat com IA
-              </MuiLink>
-              <MuiLink
-                component={Link}
-                href="/analytics"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textDecoration: 'none',
-                  '&:hover': { color: '#3b82f6' }
-                }}
-              >
-                Análises
-              </MuiLink>
-            </Stack>
           </Grid>
 
           {/* Company */}
           <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
-              Empresa
-            </Typography>
-            <Stack spacing={1}>
+            <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
+                Empresa
+              </Typography>
+              <Stack spacing={1}>
               <MuiLink
                 component={Link}
                 href="/about"
@@ -194,26 +105,17 @@ export function Footer() {
               >
                 Contato
               </MuiLink>
-              <MuiLink
-                component={Link}
-                href="/careers"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  textDecoration: 'none',
-                  '&:hover': { color: '#3b82f6' }
-                }}
-              >
-                Carreiras
-              </MuiLink>
-            </Stack>
+              </Stack>
+            </Box>
           </Grid>
 
           {/* Legal */}
           <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
-              Legal
-            </Typography>
-            <Stack spacing={1}>
+            <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
+                Legal
+              </Typography>
+              <Stack spacing={1}>
               <MuiLink
                 component={Link}
                 href="/privacy"
@@ -247,46 +149,77 @@ export function Footer() {
               >
                 Política de Cookies
               </MuiLink>
-            </Stack>
+              </Stack>
+            </Box>
           </Grid>
 
           {/* Contact */}
           <Grid item xs={12} sm={6} md={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
-              Contato
-            </Typography>
-            <Stack spacing={1}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'white' }}>
+                Contato
+              </Typography>
+              <Stack spacing={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 <Mail size={16} color="rgba(255, 255, 255, 0.7)" />
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                   contato@clarityaudio.com
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 <Phone size={16} color="rgba(255, 255, 255, 0.7)" />
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                   +55 (11) 99999-9999
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 <MapPin size={16} color="rgba(255, 255, 255, 0.7)" />
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                   São Paulo, SP - Brasil
                 </Typography>
               </Box>
-            </Stack>
+              </Stack>
+            </Box>
           </Grid>
         </Grid>
 
-        <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Divider sx={{ mt: 4, mb: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
         {/* Copyright */}
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            &copy; {new Date().getFullYear()} Clarity Audio. Todos os direitos reservados.
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'center', md: 'center' },
+          justifyContent: 'space-between',
+          gap: { xs: 2, md: 0 }
+        }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: { xs: 'center', md: 'left' } }}>
+            Owned by:{' '}
+            <Box component="span" sx={{ fontWeight: 600 }}>
+              Luthor Technologies
+            </Box>
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)', mt: 1 }}>
-            Feito com ❤️ para transformar a forma como você trabalha com áudio.
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+            &copy; {new Date().getFullYear()}{' '}
+            <Box component="span" sx={{ fontWeight: 600 }}>
+              Up Ai
+            </Box>. Todos os direitos reservados.
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: { xs: 'center', md: 'right' } }}>
+            Powered by:{' '}
+            <MuiLink 
+              href="https://legatiosolutions.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.7)', 
+                textDecoration: 'none',
+                fontWeight: 600,
+                '&:hover': { color: '#3b82f6', textDecoration: 'underline' }
+              }}
+            >
+              Legatio Solutions
+            </MuiLink>
           </Typography>
         </Box>
       </Container>

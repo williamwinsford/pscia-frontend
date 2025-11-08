@@ -36,6 +36,8 @@
     "next-env.d.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/theme/theme_backup_2.ts",
+    "src/theme/theme_clean.ts"
   ]
 }

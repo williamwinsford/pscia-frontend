@@ -20,6 +20,7 @@ export interface Transcription {
   confidence?: number;
   created_at: string;
   updated_at: string;
+  analyses?: AudioAnalysis[];
 }
 
 export interface Message {
@@ -44,6 +45,23 @@ export interface AudioAnalysis {
   analysis_type: 'sentiment' | 'keywords' | 'summary' | 'topics';
   result: any;
   created_at: string;
+}
+
+export interface DashboardStatistics {
+  total_files: number;
+  completed_files: number;
+  time_saved_hours: number;
+  average_accuracy: number;
+  total_conversations: number;
+  total_templates: number;
+  recent_activity: Array<{
+    action: string;
+    file: string;
+    time: string;
+    status: string;
+    id: number;
+    type?: 'audio' | 'conversation';
+  }>;
 }
 
 class AudioService {
@@ -76,14 +94,80 @@ class AudioService {
       const response = await fetch(url, config);
       
       if (!response.ok) {
+        // Handle 401 - token expired, try to refresh
+        if (response.status === 401) {
+          try {
+            await this.refreshAccessToken();
+            
+            // Retry the request with the new token
+            const newToken = this.getAccessToken();
+            if (newToken) {
+              config.headers = {
+                ...config.headers,
+                Authorization: `Bearer ${newToken}`,
+              };
+            }
+            
+            const retryResponse = await fetch(url, config);
+            
+            if (!retryResponse.ok) {
+              const errorData = await retryResponse.json();
+              throw new Error(errorData.error || errorData.detail || 'Ocorreu um erro.');
+            }
+            
+            return await retryResponse.json();
+          } catch (refreshError) {
+            console.error('Failed to refresh token:', refreshError);
+            // Redirect to login on refresh failure
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            throw new Error('Sessão expirada. Por favor, faça login novamente.');
+          }
+        }
+        
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.detail || 'An error occurred');
+        throw new Error(errorData.error || errorData.detail || 'Ocorreu um erro.');
       }
 
       return await response.json();
     } catch (error) {
       console.error('Audio service error:', error);
       throw error;
+    }
+  }
+
+  private async refreshAccessToken(): Promise<void> {
+    const refreshToken = typeof window !== 'undefined' 
+      ? localStorage.getItem('refresh_token')
+      : null;
+    
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const { getApiEndpoint } = await import('@/lib/config');
+    const refreshUrl = getApiEndpoint('/accounts/refresh/');
+    
+    const response = await fetch(refreshUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
+
+    const data = await response.json();
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('access_token', data.access);
+      if (data.refresh) {
+        localStorage.setItem('refresh_token', data.refresh);
+      }
     }
   }
 
@@ -98,25 +182,58 @@ class AudioService {
     formData.append('file', file);
     formData.append('language', language);
 
-    const token = this.getAccessToken();
-    const response = await fetch(`${this.baseURL}/upload/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+    let token = this.getAccessToken();
+    
+    try {
+      let response = await fetch(`${this.baseURL}/upload/`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Upload failed');
+      // Handle 401 - token expired
+      if (response.status === 401) {
+        await this.refreshAccessToken();
+        token = this.getAccessToken();
+        
+        // Retry with new token
+        response = await fetch(`${this.baseURL}/upload/`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.detail || 'Upload failed');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      // Redirect to login if token refresh failed
+      if (error.message?.includes('Session expired') || error.message?.includes('Failed to refresh')) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }
+      throw error;
     }
-
-    return await response.json();
   }
 
   async getAudioFiles(): Promise<AudioFile[]> {
     return this.request<AudioFile[]>('/files/');
+  }
+
+  async deleteAudioFile(audioFileId: number): Promise<void> {
+    return this.request<void>(`/files/${audioFileId}/`, {
+      method: 'DELETE',
+    });
   }
 
   async getTranscription(audioFileId: number): Promise<Transcription> {
@@ -129,13 +246,21 @@ class AudioService {
     conversationId?: number,
     audioFileId?: number
   ): Promise<Conversation> {
+    const body: any = {
+      message,
+    };
+    
+    if (conversationId !== undefined && conversationId !== null) {
+      body.conversation_id = conversationId;
+    }
+    
+    if (audioFileId !== undefined && audioFileId !== null) {
+      body.audio_file_id = audioFileId;
+    }
+    
     return this.request<Conversation>('/conversation/', {
       method: 'POST',
-      body: JSON.stringify({
-        message,
-        conversation_id: conversationId,
-        audio_file_id: audioFileId,
-      }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -145,6 +270,19 @@ class AudioService {
 
   async getConversation(conversationId: number): Promise<Conversation> {
     return this.request<Conversation>(`/conversation/${conversationId}/`);
+  }
+
+  async updateConversation(conversationId: number, title: string): Promise<Conversation> {
+    return this.request<Conversation>(`/conversation/${conversationId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async deleteConversation(conversationId: number): Promise<void> {
+    return this.request<void>(`/conversation/${conversationId}/`, {
+      method: 'DELETE',
+    });
   }
 
   // Audio analysis
@@ -163,6 +301,25 @@ class AudioService {
 
   async getAudioAnalyses(audioFileId: number): Promise<AudioAnalysis[]> {
     return this.request<AudioAnalysis[]>(`/analyses/${audioFileId}/`);
+  }
+
+  // Format transcription with template
+  async formatTranscriptionTemplate(
+    audioFileId: number,
+    templateId: number
+  ): Promise<{ filled_content: string; template_name: string; template_id: number }> {
+    return this.request<{ filled_content: string; template_name: string; template_id: number }>(
+      `/transcription/${audioFileId}/format-template/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ template_id: templateId }),
+      }
+    );
+  }
+
+  // Dashboard statistics
+  async getStatistics(): Promise<DashboardStatistics> {
+    return this.request<DashboardStatistics>('/statistics/');
   }
 
   // Utility methods

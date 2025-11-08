@@ -1,0 +1,95 @@
+{
+  "navigation": {
+    "home": "Inicio",
+    "about": "Sobre Nosotros",
+    "pricing": "Precios",
+    "contact": "Contacto",
+    "login": "Iniciar Sesión",
+    "register": "Registrarse",
+    "dashboard": "Panel"
+  },
+  "home": {
+    "tagline": "✨ Tecnología de IA Avanzada",
+    "heroTitle": "Transforma Audio en",
+    "heroTitleHighlight": "Texto",
+    "heroSubtitle": "Usa nuestra IA avanzada para convertir tus archivos de audio en transcripciones precisas y extraer automáticamente insights valiosos.",
+    "getStarted": "Comenzar Ahora",
+    "alreadyHaveAccount": "Ya tengo una cuenta",
+    "whyChoose": "¿Por qué elegir",
+    "whyChooseHighlight": "Up Ai",
+    "whyChooseSubtitle": "Nuestra plataforma combina tecnología de vanguardia con facilidad de uso para ofrecer la mejor experiencia de transcripción de audio.",
+    "readyToStart": "¿Listo para comenzar?",
+    "readyToStartSubtitle": "Únete a miles de usuarios que ya han transformado su flujo de trabajo con Up Ai.",
+    "speakWithSales": "Hablar con Ventas",
+    "features": {
+      "precision": {
+        "title": "Precisión Extrema",
+        "description": "Transcribe audio con 99% de precisión usando IA de última generación"
+      },
+      "speed": {
+        "title": "Velocidad Relámpago",
+        "description": "Procesa archivos de audio en segundos, no en horas"
+      },
+      "security": {
+        "title": "Seguridad Total",
+        "description": "Tus datos están protegidos con cifrado de nivel bancario"
+      },
+      "ai": {
+        "title": "IA Avanzada",
+        "description": "Análisis de sentimientos y extracción automática de insights"
+      },
+      "realtime": {
+        "title": "Tiempo Real",
+        "description": "Procesamiento instantáneo con retroalimentación en tiempo real"
+      },
+      "collaboration": {
+        "title": "Colaboración",
+        "description": "Comparte transcripciones y análisis con tu equipo"
+      }
+    },
+    "stats": {
+      "filesProcessed": "Archivos Procesados",
+      "transcriptionAccuracy": "Precisión de Transcripción",
+      "averageProcessingTime": "Tiempo Promedio de Procesamiento",
+      "activeUsers": "Usuarios Activos"
+    }
+  },
+  "theme": {
+    "light": "Tema Claro",
+    "dark": "Tema Oscuro",
+    "highContrast": "Alto Contraste",
+    "changeTheme": "Cambiar tema"
+  },
+  "language": {
+    "changeLanguage": "Cambiar idioma"
+  },
+  "errors": {
+    "sessionExpired": "Sesión expirada. Por favor, inicie sesión nuevamente.",
+    "tokenRefreshFailed": "Error al renovar la sesión. Por favor, inicie sesión nuevamente.",
+    "noRefreshToken": "No hay token de renovación disponible.",
+    "anErrorOccurred": "Ocurrió un error."
+  },
+  "about": {
+    "title": "Sobre Up Ai",
+    "heroTitle": "Revolucionando la forma en que",
+    "heroTitleHighlight": "trabajamos con audio",
+    "heroSubtitle": "Somos una empresa de tecnología enfocada en democratizar el acceso a la inteligencia artificial para transcripción y análisis de audio.",
+    "missionTitle": "Nuestra Misión",
+    "missionText1": "Creemos que la tecnología debe ser accesible y útil para todos. Nuestra misión es transformar la forma en que las personas trabajan con audio ofreciendo herramientas de IA que son potentes, precisas y fáciles de usar.",
+    "missionText2": "Desde nuestra fundación, hemos trabajado incansablemente para crear soluciones que no solo transcriben audio, sino que también extraen insights valiosos y facilitan la toma de decisiones.",
+    "visionTitle": "Nuestra Visión",
+    "visionText1": "Visualizamos un futuro donde la tecnología de transcripción y análisis de audio sea ubicua y accesible. Nuestra visión es ser la plataforma líder mundial que conecta personas y empresas con el poder transformador de la IA.",
+    "visionText2": "Queremos que cada profesional, independientemente de su campo, aproveche al máximo el contenido de audio, transformándolo en insights accionables y valor real para su negocio.",
+    "valuesTitle": "Nuestros Valores",
+    "valuesSubtitle": "Los principios que guían cada decisión y cada línea de código que escribimos.",
+    "teamTitle": "Conoce Nuestro Equipo",
+    "teamSubtitle": "Profesionales apasionados por la tecnología y dedicados a crear soluciones que marcan la diferencia.",
+    "journeyTitle": "Nuestro Viaje",
+    "journeySubtitle": "Una línea de tiempo de los hitos más importantes de nuestra historia.",
+    "statsTitle": "Números Impresionantes",
+    "statsSubtitle": "El impacto de Up Ai en números.",
+    "ctaTitle": "Sé Parte de Nuestra Historia",
+    "ctaSubtitle": "Únete a miles de profesionales que ya han transformado su productividad con Up Ai."
+  }
+}
+

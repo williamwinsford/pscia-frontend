@@ -1,0 +1,19 @@
+{
+  "name": "Up Ai - AI-powered audio transcription",
+  "short_name": "Up Ai",
+  "description": "Transforme seus arquivos de áudio em texto com precisão usando inteligência artificial",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/logo-up-ai.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
+

@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const handleAuthError = (error: any) => {
     console.error('Auth error:', error);
-    const errorMessage = error.message || 'An error occurred';
+    const errorMessage = error.message || 'Ocorreu um erro.';
     setError(errorMessage);
     throw error;
   };
@@ -60,6 +60,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(true);
       await authService.login(email, password);
       await loadUser();
+      setError(null); // Clear error on successful login
     } catch (error) {
       handleAuthError(error);
     } finally {
@@ -141,11 +142,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (authService.isAuthenticated()) {
         const userData = await authService.getCurrentUser();
         setUser(userData);
+        setError(null); // Clear any previous errors on successful user load
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load user:', error);
-      // If token is invalid, clear it
-      authService.logout();
+      // Only clear tokens if it's a session expired error, otherwise just clear user
+      if (error?.message?.includes('Sessão expirada') || error?.message?.includes('Session expired')) {
+        authService.logout();
+      }
       setUser(null);
     }
   };

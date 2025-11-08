@@ -20,7 +20,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import {
-  AudioLines,
   Upload,
   MessageCircle,
   BarChart3,
@@ -31,6 +30,7 @@ import {
   FileAudio,
   Settings,
 } from 'lucide-react';
+import Image from 'next/image';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -64,10 +64,16 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 clarity-gradient rounded-lg flex items-center justify-center">
-                <AudioLines className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 flex items-center justify-center">
+                <Image 
+                  src="/logo-up-ai-trasnparent.png" 
+                  alt="Up Ai Logo" 
+                  width={32} 
+                  height={32}
+                  className="object-contain"
+                />
               </div>
-              <span className="text-xl font-bold text-gray-900">Clarity Audio</span>
+              <span className="text-xl font-bold text-gray-900">Up Ai</span>
             </Link>
           </div>
 

@@ -1,19 +1,33 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAudio } from '@/hooks/useAudio';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Upload, FileAudio, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { NoIndex } from '@/components/NoIndex';
+import { RequireAuth } from '@/components/RequireAuth';
+import { Upload, FileAudio, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Alert,
+  LinearProgress,
+  Chip,
+  Avatar,
+  CircularProgress,
+  Stack,
+  Paper,
+  IconButton
+} from '@mui/material';
 
 export default function UploadPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { 
     audioFiles, 
     uploadAudio, 
@@ -28,12 +42,6 @@ export default function UploadPage() {
   } = useAudio();
   const router = useRouter();
   const [uploadProgress, setUploadProgress] = useState(0);
-
-  // Redirect if not authenticated
-  if (!authLoading && !user) {
-    router.push('/login');
-    return null;
-  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     clearError();
@@ -77,158 +85,245 @@ export default function UploadPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle size={16} />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle size={16} />;
       case 'processing':
       case 'uploading':
-        return <Clock className="h-4 w-4 text-blue-600" />;
+        return <Clock size={16} />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock size={16} />;
     }
   };
 
-  if (authLoading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
+      <RequireAuth>
+        <DashboardLayout>
+          <Box
+            sx={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column'
+            }}
+          >
+            <CircularProgress size={60} />
+            <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+              Carregando...
+            </Typography>
+          </Box>
+        </DashboardLayout>
+      </RequireAuth>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Upload de Áudio</h1>
-          <p className="text-gray-600">Faça upload de seus arquivos de áudio para transcrição e análise</p>
-        </header>
+    <RequireAuth>
+      <NoIndex />
+      <DashboardLayout>
+      <Box 
+        sx={{
+          maxWidth: '1200px',
+          py: 2, 
+          px: { xs: 2, md: 4 },
+          pl: { xs: 2, md: 45 },
+          width: '100%'
+        }}
+      >
+          {/* Header */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+              Upload de Áudio
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Faça upload de seus arquivos de áudio para transcrição e análise
+            </Typography>
+          </Box>
 
-        {error && (
-          <Alert severity="error" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 4 }}>
+              {error}
+            </Alert>
+          )}
 
-        {/* Upload Area */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Arraste e solte seus arquivos de áudio</CardTitle>
-            <CardDescription>
-              Formatos suportados: MP3, WAV, M4A, OGG, WMA (máximo 100MB)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-300 hover:border-primary hover:bg-primary/5'
-              }`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              {isDragActive ? (
-                <p className="text-lg text-primary">Solte os arquivos aqui...</p>
-              ) : (
-                <div>
-                  <p className="text-lg text-gray-600 mb-2">
-                    Arraste arquivos de áudio aqui ou clique para selecionar
-                  </p>
-                  <Button variant="outlined">Selecionar Arquivos</Button>
-                </div>
-              )}
-            </div>
-
-            {uploadProgress > 0 && (
-              <div className="mt-4">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                  <span>Enviando arquivo...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} className="w-full" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Audio Files List */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Seus Arquivos de Áudio</CardTitle>
-                <CardDescription>
-                  {audioFiles.length} arquivo(s) enviado(s)
-                </CardDescription>
-              </div>
-              <Button 
-                onClick={loadAudioFiles} 
-                variant="outlined"
-                disabled={isLoading}
+          {/* Upload Area */}
+          <Card sx={{ mb: 4 }}>
+            <CardHeader
+              title="Arraste e solte seus arquivos de áudio"
+              subheader="Formatos suportados: MP3, WAV, M4A, OGG, WMA (máximo 100MB)"
+            />
+            <CardContent>
+              <Paper
+                {...getRootProps()}
+                elevation={0}
+                sx={{
+                  border: 2,
+                  borderStyle: 'dashed',
+                  borderColor: isDragActive ? 'primary.main' : 'grey.300',
+                  borderRadius: 3,
+                  p: 4,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: isDragActive ? 'primary.main' + '08' : 'transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    backgroundColor: 'primary.main' + '05'
+                  }
+                }}
               >
-                Atualizar
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {audioFiles.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <FileAudio className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>Nenhum arquivo de áudio enviado ainda</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {audioFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                <input {...getInputProps()} />
+                <Avatar
+                  sx={{
+                    mx: 'auto',
+                    mb: 2,
+                    width: 64,
+                    height: 64,
+                    bgcolor: 'action.disabledBackground',
+                    color: 'action.disabled'
+                  }}
+                >
+                  <Upload size={32} />
+                </Avatar>
+                {isDragActive ? (
+                  <Typography variant="h6" color="primary">
+                    Solte os arquivos aqui...
+                  </Typography>
+                ) : (
+                  <Stack spacing={2}>
+                    <Typography variant="body1" color="text.secondary">
+                      Arraste arquivos de áudio aqui ou clique para selecionar
+                    </Typography>
+                    <Button variant="outlined" sx={{ mx: 'auto' }}>
+                      Selecionar Arquivos
+                    </Button>
+                  </Stack>
+                )}
+              </Paper>
+
+              {uploadProgress > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Enviando arquivo...
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {uploadProgress}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress variant="determinate" value={uploadProgress} />
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Audio Files List */}
+          <Card>
+            <CardHeader
+              title="Seus Arquivos de Áudio"
+              subheader={`${audioFiles.length} arquivo(s) enviado(s)`}
+              action={
+                <IconButton
+                  onClick={loadAudioFiles}
+                  disabled={isLoading}
+                  color="primary"
+                >
+                  <RefreshCw size={20} />
+                </IconButton>
+              }
+            />
+            <CardContent>
+              {audioFiles.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Avatar
+                    sx={{
+                      mx: 'auto',
+                      mb: 2,
+                      width: 80,
+                      height: 80,
+                      bgcolor: 'action.disabledBackground',
+                      color: 'action.disabled'
+                    }}
                   >
-                    <div className="flex items-center space-x-4">
-                      <FileAudio className="h-8 w-8 text-blue-500" />
-                      <div>
-                        <h3 className="font-medium text-gray-900">{file.file_name}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>{formatFileSize(file.file_size)}</span>
-                          {file.duration && (
-                            <span>{formatDuration(file.duration)}</span>
+                    <FileAudio size={40} />
+                  </Avatar>
+                  <Typography variant="body1" color="text.secondary">
+                    Nenhum arquivo de áudio enviado ainda
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={2}>
+                  {audioFiles.map((file) => (
+                    <Paper
+                      key={file.id}
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        '&:hover': {
+                          backgroundColor: 'action.hover',
+                          boxShadow: 2
+                        },
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                          <Avatar sx={{ bgcolor: 'primary.main' }}>
+                            <FileAudio size={24} />
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 200 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              {file.file_name}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatFileSize(file.file_size)}
+                              </Typography>
+                              {file.duration && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatDuration(file.duration)}
+                                </Typography>
+                              )}
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(file.uploaded_at).toLocaleDateString('pt-BR')}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Box>
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Chip
+                            icon={getStatusIcon(file.status)}
+                            label={getStatusText(file.status)}
+                            color={file.status === 'completed' ? 'success' : file.status === 'failed' ? 'error' : 'info'}
+                            variant="outlined"
+                            size="small"
+                          />
+                          
+                          {file.status === 'completed' && (
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => router.push(`/transcription/${file.id}`)}
+                            >
+                              Ver Transcrição
+                            </Button>
                           )}
-                          <span>{new Date(file.uploaded_at).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                      <Badge 
-                        variant="outlined" 
-                        className={`${getStatusColor(file.status)} border-current`}
-                      >
-                        <div className="flex items-center space-x-1">
-                          {getStatusIcon(file.status)}
-                          <span>{getStatusText(file.status)}</span>
-                        </div>
-                      </Badge>
-                      
-                      {file.status === 'completed' && (
-                        <Button
-                          size="small"
-                          onClick={() => router.push(`/transcription/${file.id}`)}
-                        >
-                          Ver Transcrição
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
+      </Box>
+    </DashboardLayout>
+    </RequireAuth>
   );
 }

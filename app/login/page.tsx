@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -16,23 +16,30 @@ import {
   Stack,
   IconButton,
   InputAdornment,
-  Divider,
-  Chip,
   Paper,
   Grid,
-  Avatar
+  Avatar,
+  CircularProgress
 } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
-import { AudioLines, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle, Shield, Zap, Users } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, error, clearError } = useAuth();
+  const { user, isLoading: authLoading, login, error, clearError } = useAuth();
   const router = useRouter();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,21 +56,23 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setEmail('demo@clarityaudio.com');
-    setPassword('demo123');
-    setIsLoading(true);
-    clearError();
-
-    try {
-      await login('demo@clarityaudio.com', 'demo123');
-      router.push('/dashboard');
-    } catch (err) {
-      // Error is handled by useAuth hook
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Show loading while checking auth status
+  if (authLoading) {
+    return (
+      <Layout showHeader={true} showFooter={true}>
+        <Box
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </Layout>
+    );
+  }
 
   const features = [
     {
@@ -104,18 +113,22 @@ export default function LoginPage() {
                     sx={{
                       width: 60,
                       height: 60,
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mr: 2
                     }}
                   >
-                    <AudioLines size={32} color="white" />
+                    <Image 
+                      src="/logo-up-ai-trasnparent.png" 
+                      alt="Up Ai Logo" 
+                      width={60} 
+                      height={60}
+                      style={{ objectFit: 'contain' }}
+                    />
                   </Box>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    Clarity Audio
+                    Up Ai
                   </Typography>
                 </Box>
                 
@@ -148,7 +161,7 @@ export default function LoginPage() {
                       elevation={0}
                       sx={{
                         p: 3,
-                        borderRadius: 3,
+                        borderRadius: 1,
                         background: 'rgba(255, 255, 255, 0.7)',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         backdropFilter: 'blur(10px)',
@@ -162,7 +175,7 @@ export default function LoginPage() {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar
                           sx={{
-                            bgcolor: 'primary.light',
+                            bgcolor: 'rgba(59, 130, 246, 0.1)',
                             color: 'primary.main',
                             width: 48,
                             height: 48
@@ -233,7 +246,7 @@ export default function LoginPage() {
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                             '&:hover .MuiOutlinedInput-notchedOutline': {
                               borderColor: 'primary.main',
                             },
@@ -273,7 +286,7 @@ export default function LoginPage() {
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                             '&:hover .MuiOutlinedInput-notchedOutline': {
                               borderColor: 'primary.main',
                             },
@@ -317,32 +330,6 @@ export default function LoginPage() {
                       </Button>
                     </Stack>
                   </Box>
-
-                  <Divider sx={{ my: 3 }}>
-                    <Chip label="ou" size="small" />
-                  </Divider>
-
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    size="large"
-                    onClick={handleDemoLogin}
-                    disabled={isLoading}
-                    startIcon={<CheckCircle size={20} />}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 2,
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
-                      '&:hover': {
-                        borderColor: 'primary.dark',
-                        backgroundColor: 'primary.light',
-                        color: 'primary.dark',
-                      },
-                    }}
-                  >
-                    Entrar com conta demo
-                  </Button>
 
                   <Box sx={{ textAlign: 'center', mt: 4 }}>
                     <Typography variant="body2" color="text.secondary">

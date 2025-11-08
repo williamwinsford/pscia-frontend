@@ -21,11 +21,14 @@ import {
   Paper,
   Grid,
   Avatar,
-  LinearProgress
+  LinearProgress,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
-import { AudioLines, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle, User, Shield, Zap, Users, Star } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle, User, Shield, Zap, Users, Star } from 'lucide-react';
+import Image from 'next/image';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -39,6 +42,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { register, error, clearError } = useAuth();
   const router = useRouter();
 
@@ -117,7 +121,7 @@ export default function RegisterPage() {
         }}
       >
         <Container maxWidth="lg">
-          <Grid container spacing={4} alignItems="center">
+          <Grid container spacing={4} alignItems="flex-start">
             {/* Left Side - Benefits */}
             <Grid item xs={12} md={6}>
               <Box sx={{ textAlign: { xs: 'center', md: 'left' }, mb: 4 }}>
@@ -126,18 +130,22 @@ export default function RegisterPage() {
                     sx={{
                       width: 60,
                       height: 60,
-                      borderRadius: 3,
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mr: 2
                     }}
                   >
-                    <AudioLines size={32} color="white" />
+                    <Image 
+                      src="/logo-up-ai-trasnparent.png" 
+                      alt="Up Ai Logo" 
+                      width={60} 
+                      height={60}
+                      style={{ objectFit: 'contain' }}
+                    />
                   </Box>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary' }}>
-                    Clarity Audio
+                    Up Ai
                   </Typography>
                 </Box>
                 
@@ -170,7 +178,7 @@ export default function RegisterPage() {
                         elevation={0}
                         sx={{
                           p: 3,
-                          borderRadius: 3,
+                          borderRadius: 1,
                           background: 'rgba(255, 255, 255, 0.7)',
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           backdropFilter: 'blur(10px)',
@@ -185,7 +193,7 @@ export default function RegisterPage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                           <Avatar
                             sx={{
-                              bgcolor: 'primary.light',
+                              bgcolor: 'rgba(59, 130, 246, 0.1)',
                               color: 'primary.main',
                               width: 40,
                               height: 40
@@ -239,50 +247,58 @@ export default function RegisterPage() {
                   <Box component="form" onSubmit={handleSubmit} sx={{ mb: 3 }}>
                     <Stack spacing={3}>
                       {/* Name Fields */}
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <TextField
-                            fullWidth
-                            label="Nome"
-                            placeholder="Seu nome"
-                            value={formData.firstName}
-                            onChange={handleChange('firstName')}
-                            required
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <User size={20} color="#6b7280" />
-                                </InputAdornment>
-                              ),
-                            }}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
-                              },
-                            }}
-                          />
+                      <Box sx={{ ml: -3 }}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                              Nome
+                            </Typography>
+                            <TextField
+                              fullWidth
+                              placeholder="Seu nome"
+                              value={formData.firstName}
+                              onChange={handleChange('firstName')}
+                              required
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <User size={20} color="#6b7280" />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: 1,
+                                },
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                              Sobrenome
+                            </Typography>
+                            <TextField
+                              fullWidth
+                              placeholder="Seu sobrenome"
+                              value={formData.lastName}
+                              onChange={handleChange('lastName')}
+                              required
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: 1,
+                                },
+                              }}
+                            />
+                          </Grid>
                         </Grid>
-                        <Grid item xs={6}>
-                          <TextField
-                            fullWidth
-                            label="Sobrenome"
-                            placeholder="Seu sobrenome"
-                            value={formData.lastName}
-                            onChange={handleChange('lastName')}
-                            required
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
-                              },
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
+                      </Box>
 
                       {/* Email */}
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        Email
+                      </Typography>
                       <TextField
                         fullWidth
-                        label="Email"
                         placeholder="seu@email.com"
                         type="email"
                         value={formData.email}
@@ -297,30 +313,34 @@ export default function RegisterPage() {
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                           },
                         }}
                       />
 
                       {/* Username */}
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        Nome de usuário
+                      </Typography>
                       <TextField
                         fullWidth
-                        label="Nome de usuário"
                         placeholder="seu_usuario"
                         value={formData.username}
                         onChange={handleChange('username')}
                         required
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                           },
                         }}
                       />
 
                       {/* Password */}
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        Senha
+                      </Typography>
                       <TextField
                         fullWidth
-                        label="Senha"
                         placeholder="Digite sua senha"
                         type={showPassword ? 'text' : 'password'}
                         value={formData.password}
@@ -346,7 +366,7 @@ export default function RegisterPage() {
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                           },
                         }}
                       />
@@ -376,9 +396,11 @@ export default function RegisterPage() {
                       </Box>
 
                       {/* Confirm Password */}
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                        Confirmar senha
+                      </Typography>
                       <TextField
                         fullWidth
-                        label="Confirmar senha"
                         placeholder="Confirme sua senha"
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={formData.confirmPassword}
@@ -406,9 +428,31 @@ export default function RegisterPage() {
                         }}
                         sx={{
                           '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: 1,
                           },
                         }}
+                      />
+
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={agreeToTerms}
+                            onChange={(e) => setAgreeToTerms(e.target.checked)}
+                          />
+                        }
+                        label={
+                          <Typography variant="body2">
+                            Li e estou de acordo com os{' '}
+                            <Link href="/terms" style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                              Termos de Uso
+                            </Link>
+                            {' '}e{' '}
+                            <Link href="/privacy" style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                              Política de Privacidade*
+                            </Link>
+                          </Typography>
+                        }
+                        sx={{ mt: 1 }}
                       />
 
                       <Button
@@ -416,7 +460,7 @@ export default function RegisterPage() {
                         fullWidth
                         variant="contained"
                         size="large"
-                        disabled={isLoading || !allRequirementsMet || !passwordsMatch}
+                        disabled={isLoading || !allRequirementsMet || !passwordsMatch || !agreeToTerms}
                         endIcon={isLoading ? null : <ArrowRight size={20} />}
                         sx={{
                           py: 1.5,

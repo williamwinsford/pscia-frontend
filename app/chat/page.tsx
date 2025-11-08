@@ -4,11 +4,9 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAudio } from '@/hooks/useAudio';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { NoIndex } from '@/components/NoIndex';
+import ReactMarkdown from 'react-markdown';
 import { 
   Send, 
   MessageCircle, 
@@ -16,8 +14,38 @@ import {
   Bot, 
   User,
   ArrowLeft,
-  Plus
+  Plus,
+  Copy,
+  Check
 } from 'lucide-react';
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Alert,
+  CircularProgress,
+  Stack,
+  Paper,
+  TextField,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  IconButton,
+  Avatar,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Menu,
+  MenuItem
+} from '@mui/material';
+import { MoreVert } from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -27,28 +55,104 @@ function ChatPageContent() {
     startConversation, 
     loadConversations, 
     getConversation,
+    updateConversation,
+    deleteConversation,
     conversations,
     isLoading, 
     error, 
-    clearError
+    clearError,
+    audioFiles,
+    loadAudioFiles
   } = useAudio();
   
   const [currentConversation, setCurrentConversation] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isNewConversationReady, setIsNewConversationReady] = useState(false);
+  const [selectedAudioFileId, setSelectedAudioFileId] = useState<number | null>(null);
+  const [showTranscriptionDialog, setShowTranscriptionDialog] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [hasAutoCreatedConversation, setHasAutoCreatedConversation] = useState(false);
+  const [isCreatingAutoConversation, setIsCreatingAutoConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const autoCreateAttemptedRef = useRef<string | null>(null);
   
   const audioFileId = searchParams.get('audio');
 
   useEffect(() => {
     if (user) {
       loadConversations();
+      loadAudioFiles();
     }
   }, [user]);
 
   useEffect(() => {
+    if (audioFileId) {
+      setSelectedAudioFileId(parseInt(audioFileId));
+      setIsNewConversationReady(true);
+    }
+  }, [audioFileId]);
+
+  // Criar conversa automaticamente quando há audioFileId na URL
+  useEffect(() => {
+    const createAutoConversation = async () => {
+      // Verificar condições: há audioFileId, não há conversa atual, ainda não foi criada, usuário está logado
+      // Usar ref para garantir que só tenta criar uma vez por audioFileId
+      if (
+        audioFileId && 
+        !currentConversation && 
+        !hasAutoCreatedConversation && 
+        !isCreatingAutoConversation &&
+        user &&
+        !isLoading &&
+        autoCreateAttemptedRef.current !== audioFileId
+      ) {
+        // Marcar que já tentou criar para este audioFileId
+        autoCreateAttemptedRef.current = audioFileId;
+        setIsCreatingAutoConversation(true);
+        
+        try {
+          const welcomeMessage = "Olá! Gostaria de fazer perguntas sobre esta transcrição.";
+          const conversation = await startConversation(
+            welcomeMessage,
+            undefined,
+            parseInt(audioFileId)
+          );
+          
+          setCurrentConversation(conversation);
+          setHasAutoCreatedConversation(true);
+          setIsNewConversationReady(false);
+          
+          // Recarregar conversas para garantir sincronização e evitar duplicatas
+          await loadConversations();
+          
+          // Limpar parâmetro da URL para evitar recriação
+          router.replace('/chat');
+        } catch (error) {
+          console.error('Error creating auto conversation:', error);
+          // Resetar ref em caso de erro para permitir nova tentativa
+          autoCreateAttemptedRef.current = null;
+          // Manter o audioFileId selecionado para tentativa manual
+          // O erro já é tratado pelo hook useAudio
+        } finally {
+          setIsCreatingAutoConversation(false);
+        }
+      }
+    };
+
+    createAutoConversation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioFileId, currentConversation, hasAutoCreatedConversation, isCreatingAutoConversation, user, isLoading]);
+
+  useEffect(() => {
     scrollToBottom();
-  }, [currentConversation]);
+  }, [currentConversation, pendingUserMessage, isAiTyping]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,20 +161,35 @@ function ChatPageContent() {
   const handleSendMessage = async () => {
     if (!message.trim() || isSending) return;
 
+    const userMessageText = message.trim();
+    
+    // Limpar input imediatamente
+    setMessage('');
+    
+    // Mostrar mensagem do usuário imediatamente
+    setPendingUserMessage(userMessageText);
+    setIsAiTyping(true);
+    setIsSending(true);
+    clearError();
+    
     try {
-      setIsSending(true);
-      clearError();
-      
       const conversation = await startConversation(
-        message,
+        userMessageText,
         currentConversation?.id,
-        audioFileId ? parseInt(audioFileId) : undefined
+        selectedAudioFileId || undefined
       );
       
+      // Atualizar conversa e remover estados temporários
       setCurrentConversation(conversation);
-      setMessage('');
-    } catch (error) {
+      setPendingUserMessage(null);
+      setIsAiTyping(false);
+      setIsNewConversationReady(false);
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      // Limpar estados temporários em caso de erro
+      setPendingUserMessage(null);
+      setIsAiTyping(false);
+      // O erro já é tratado pelo hook useAudio e exibido no componente
     } finally {
       setIsSending(false);
     }
@@ -83,28 +202,135 @@ function ChatPageContent() {
     }
   };
 
+  const handleCopyMessage = async (content: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageId(messageId);
+      setTimeout(() => {
+        setCopiedMessageId(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+    }
+  };
+
   const selectConversation = async (conversationId: number) => {
     try {
       const conversation = await getConversation(conversationId);
       setCurrentConversation(conversation);
+      setIsNewConversationReady(false);
+      setHasAutoCreatedConversation(false);
+      setSelectedAudioFileId(null);
+      autoCreateAttemptedRef.current = null;
     } catch (error) {
       console.error('Error loading conversation:', error);
     }
   };
 
   const startNewConversation = () => {
+    setShowTranscriptionDialog(true);
+  };
+
+  const handleSelectTranscription = (audioFileId: number) => {
+    setSelectedAudioFileId(audioFileId);
+    setShowTranscriptionDialog(false);
     setCurrentConversation(null);
     setMessage('');
+    setIsNewConversationReady(true);
+    setHasAutoCreatedConversation(false);
+    autoCreateAttemptedRef.current = null;
+  };
+
+  const handleCancelNewConversation = () => {
+    setShowTranscriptionDialog(false);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, conversationId: number) => {
+    event.stopPropagation();
+    setMenuAnchorEl(event.currentTarget);
+    setSelectedConversationId(conversationId);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedConversationId(null);
+  };
+
+  const handleRenameClick = () => {
+    const conversation = conversations.find(c => c.id === selectedConversationId);
+    if (conversation) {
+      setRenameValue(conversation.title);
+      setShowRenameDialog(true);
+      setMenuAnchorEl(null); // Fecha o menu mas mantém o selectedConversationId
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    if (!selectedConversationId) return;
+    
+    try {
+      // Fechar menu imediatamente
+      handleMenuClose();
+      
+      // Se a conversa deletada estiver aberta, fechar ela
+      if (currentConversation?.id === selectedConversationId) {
+        setCurrentConversation(null);
+        setIsNewConversationReady(false);
+        setSelectedAudioFileId(null);
+        setMessage('');
+      }
+      
+      // Deletar conversa (o hook já remove da lista)
+      await deleteConversation(selectedConversationId);
+      
+      // Recarregar lista de conversas para garantir sincronização
+      await loadConversations();
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      // Em caso de erro, recarregar conversas para garantir estado correto
+      await loadConversations();
+    }
+  };
+
+  const handleRenameSubmit = async () => {
+    if (selectedConversationId && renameValue.trim()) {
+      try {
+        await updateConversation(selectedConversationId, renameValue.trim());
+        if (currentConversation?.id === selectedConversationId) {
+          const updated = await getConversation(selectedConversationId);
+          setCurrentConversation(updated);
+        }
+        setShowRenameDialog(false);
+        setRenameValue('');
+        setSelectedConversationId(null);
+      } catch (error) {
+        console.error('Error renaming conversation:', error);
+      }
+    }
+  };
+
+  const handleRenameCancel = () => {
+    setShowRenameDialog(false);
+    setRenameValue('');
+    setSelectedConversationId(null);
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column'
+        }}
+      >
+        <CircularProgress size={60} />
+        <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+          Carregando...
+        </Typography>
+      </Box>
     );
   }
 
@@ -114,200 +340,732 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="flex h-screen">
+    <>
+      <NoIndex />
+      <DashboardLayout>
+      <Box 
+        sx={{ 
+          width: '100%',
+          px: { xs: 1, md: 0 },
+        }}
+      >
+        <Box 
+          sx={{ 
+            maxWidth: { xs: '100%', md: '1400px' },
+            width: '100%',
+            height: { xs: 'calc(100vh - 100px)', md: 'calc(100vh - 64px)' },
+            maxHeight: { xs: 'calc(100vh - 100px)', md: 'calc(100vh - 64px)' },
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            mx: 'auto',
+            mb: { xs: 2, md: 4 },
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
         {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Conversas</h2>
+        <Paper
+          elevation={0}
+          sx={{
+            width: { xs: '100%', sm: '280px', md: 320 },
+            maxWidth: { xs: '100%', sm: '280px', md: 320 },
+            display: { xs: currentConversation || isNewConversationReady ? 'none' : 'flex', md: 'flex' },
+            flexDirection: 'column',
+            borderRight: { xs: 0, md: 1 },
+            borderBottom: { xs: 1, md: 0 },
+            borderColor: 'divider',
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: { xs: 0, md: 0 },
+            borderBottomLeftRadius: { xs: 0, md: 0 },
+            height: { xs: 'auto', md: '100%' },
+            maxHeight: { xs: '40vh', md: 'none' },
+            mx: { xs: 'auto', md: 0 }
+          }}
+        >
+          <Box sx={{ p: { xs: 1.5, md: 3 }, pt: { xs: 1.5, md: 4 }, borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8, gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1.25rem' } }}>
+                Conversas
+              </Typography>
               <Button
                 size="small"
+                variant="outlined"
+                startIcon={<Plus size={16} />}
                 onClick={startNewConversation}
-                className="flex items-center"
+                sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' }, px: { xs: 1, md: 2 } }}
               >
-                <Plus className="h-4 w-4 mr-1" />
                 Nova
               </Button>
-            </div>
-            {audioFileId && (
-              <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
-                <FileAudio className="h-4 w-4 text-blue-500" />
-                <span className="text-sm text-blue-700">Contexto de áudio ativo</span>
-              </div>
-            )}
-          </div>
+            </Box>
+          </Box>
           
-          <div className="flex-1 overflow-y-auto">
+          <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 0.5, md: 1 } }}>
             {conversations.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <MessageCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">Nenhuma conversa ainda</p>
-              </div>
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Avatar sx={{ mx: 'auto', mb: 2, bgcolor: 'action.disabledBackground' }}>
+                  <MessageCircle size={32} />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary">
+                  Nenhuma conversa ainda
+                </Typography>
+              </Box>
             ) : (
-              <div className="space-y-1 p-2">
+              <List>
                 {conversations.map((conversation) => (
-                  <button
-                    key={conversation.id}
-                    onClick={() => selectConversation(conversation.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      currentConversation?.id === conversation.id
-                        ? 'bg-blue-50 border border-blue-200'
-                        : 'hover:bg-gray-50'
-                    }`}
+                  <ListItem 
+                    key={conversation.id} 
+                    disablePadding
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        onClick={(e) => handleMenuOpen(e, conversation.id)}
+                        sx={{ mr: 0.5 }}
+                      >
+                        <MoreVert fontSize="small" />
+                      </IconButton>
+                    }
                   >
-                    <h3 className="font-medium text-gray-900 truncate">
-                      {conversation.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {conversation.message_count} mensagem(s)
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(conversation.updated_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  </button>
+                    <ListItemButton
+                      selected={currentConversation?.id === conversation.id}
+                      onClick={() => selectConversation(conversation.id)}
+                      sx={{
+                        borderRadius: 1,
+                        '&.Mui-selected': {
+                          bgcolor: (theme) => alpha(theme.palette.primary.light, 0.3),
+                          '&:hover': {
+                            bgcolor: (theme) => alpha(theme.palette.primary.light, 0.3)
+                          }
+                        }
+                      }}
+                    >
+                      <ListItemText
+                        primary={conversation.title}
+                        primaryTypographyProps={{
+                          sx: { fontSize: { xs: '0.875rem', md: '1rem' } }
+                        }}
+                        secondary={
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
+                              {conversation.message_count} mensagem(s)
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
+                              {new Date(conversation.updated_at).toLocaleDateString('pt-BR')} {new Date(conversation.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                    </ListItemButton>
+                  </ListItem>
                 ))}
-              </div>
+              </List>
             )}
-          </div>
-        </div>
+          </Box>
+        </Paper>
 
         {/* Main Chat */}
-        <div className="flex-1 flex flex-col">
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minWidth: 0, 
+          maxWidth: { xs: '100%', sm: 'calc(100% - 280px)', md: 'none' }, 
+          mx: { xs: 'auto', md: 0 },
+          height: { xs: '100%', md: '100%' },
+          minHeight: { xs: 0, md: 0 },
+          maxHeight: { xs: '100%', md: '100%' },
+          overflow: 'hidden'
+        }}>
           {/* Header */}
-          <div className="bg-white border-b border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => router.back()}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
-                </Button>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    {currentConversation ? currentConversation.title : 'Nova Conversa'}
-                  </h1>
-                  <p className="text-sm text-gray-500">
+          <Paper elevation={0} sx={{ p: { xs: 1.5, md: 3 }, borderBottom: 1, borderColor: 'divider', borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 }, flex: 1, minWidth: 0 }}>
+                {(currentConversation || isNewConversationReady) && (
+                  <>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<ArrowLeft size={16} />}
+                      onClick={() => {
+                        setCurrentConversation(null);
+                        setIsNewConversationReady(false);
+                        setSelectedAudioFileId(null);
+                        setMessage('');
+                        setHasAutoCreatedConversation(false);
+                        autoCreateAttemptedRef.current = null;
+                      }}
+                      sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, minWidth: { xs: 'auto', md: '64px' } }}
+                    >
+                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Voltar</Box>
+                    </Button>
+                    <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+                  </>
+                )}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '1.25rem' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentConversation ? currentConversation.title : (isNewConversationReady ? 'Nova Conversa' : 'Chat com IA')}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {currentConversation 
                       ? `${currentConversation.message_count} mensagem(s)`
-                      : 'Comece uma nova conversa com a IA'
+                      : isNewConversationReady 
+                        ? 'Comece uma nova conversa com a IA'
+                        : 'Clique em "Nova" para começar uma conversa'
                     }
-                  </p>
-                </div>
-              </div>
-              
-              {audioFileId && (
-                <Badge variant="outlined" className="text-blue-600 border-blue-600">
-                  🎵 Contexto de áudio
-                </Badge>
-              )}
-            </div>
-          </div>
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Paper>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {error && (
-              <Alert severity="error">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          <Box sx={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            p: { xs: 1.5, md: 3 },
+            minHeight: 0,
+            height: 0,
+            WebkitOverflowScrolling: 'touch',
+            '-webkit-overflow-scrolling': 'touch',
+            position: 'relative',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              borderRadius: '3px',
+            },
+          }}>
+            <Stack spacing={{ xs: 1.5, md: 2 }}>
+              {error && (
+                <Alert severity="error">
+                  {error}
+                </Alert>
+              )}
 
-            {!currentConversation ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <Bot className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Bem-vindo ao Chat com IA
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Faça perguntas sobre seus áudios ou converse sobre qualquer tópico
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Digite sua mensagem abaixo para começar
-                  </p>
-                </div>
-              </div>
-            ) : (
-              currentConversation.messages.map((msg: any) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      msg.role === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white border border-gray-200 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-start space-x-2">
-                      {msg.role === 'assistant' && (
-                        <Bot className="h-4 w-4 mt-1 text-gray-400" />
-                      )}
-                      {msg.role === 'user' && (
-                        <User className="h-4 w-4 mt-1 text-blue-100" />
-                      )}
-                      <div className="flex-1">
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-                        }`}>
-                          {new Date(msg.created_at).toLocaleTimeString('pt-BR')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+              {isCreatingAutoConversation && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={40} />
+                  <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+                    Criando conversa...
+                  </Typography>
+                </Box>
+              )}
+
+              {!currentConversation && !isNewConversationReady && !isCreatingAutoConversation ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Avatar sx={{ mx: 'auto', mb: 2, width: 80, height: 80, bgcolor: 'action.disabledBackground' }}>
+                      <Bot size={40} />
+                    </Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                      Bem-vindo ao Chat com IA
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                      Faça perguntas sobre seus áudios ou converse sobre qualquer tópico
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Clique em "Nova" para começar uma conversa
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : currentConversation || pendingUserMessage ? (
+                <>
+                  {/* Mensagens da conversa */}
+                  {currentConversation?.messages.map((msg: any) => (
+                    <Box
+                      key={msg.id}
+                      sx={{
+                        display: 'flex',
+                        justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start'
+                      }}
+                    >
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          maxWidth: { xs: '90%', sm: '85%', md: '60%' },
+                          px: { xs: 1.25, md: 2 },
+                          py: { xs: 1, md: 1.5 },
+                          borderRadius: 1,
+                          ...(msg.role === 'user' && { borderBottomRightRadius: 0 }),
+                          ...(msg.role === 'assistant' && { borderBottomLeftRadius: 0 }),
+                          bgcolor: msg.role === 'user' ? 'primary.main' : 'background.paper',
+                          border: msg.role === 'assistant' ? 1 : 0,
+                          borderColor: 'divider',
+                          position: 'relative',
+                          '&:hover .copy-button': {
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                          {msg.role === 'assistant' && (
+                            <Avatar sx={{ width: 20, height: 20, bgcolor: 'action.disabledBackground' }}>
+                              <Bot size={12} />
+                            </Avatar>
+                          )}
+                          {msg.role === 'user' && (
+                            <Avatar sx={{ width: 20, height: 20, bgcolor: 'primary.light' }}>
+                              <User size={12} />
+                            </Avatar>
+                          )}
+                          <Box sx={{ flex: 1 }}>
+                            {msg.role === 'assistant' ? (
+                              <Box
+                                sx={{
+                                  color: 'text.primary',
+                                  fontSize: '0.875rem',
+                                  lineHeight: 1.6,
+                                  '& p': {
+                                    margin: 0,
+                                    marginBottom: 1,
+                                    '&:last-child': {
+                                      marginBottom: 0
+                                    }
+                                  },
+                                  '& ul, & ol': {
+                                    margin: 0,
+                                    paddingLeft: 2,
+                                    marginBottom: 1
+                                  },
+                                  '& li': {
+                                    marginBottom: 0.5
+                                  },
+                                  '& code': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                                    padding: '2px 4px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.875em',
+                                    fontFamily: 'monospace'
+                                  },
+                                  '& pre': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                                    padding: 1,
+                                    borderRadius: '4px',
+                                    overflow: 'auto',
+                                    marginBottom: 1,
+                                    '& code': {
+                                      backgroundColor: 'transparent',
+                                      padding: 0
+                                    }
+                                  },
+                                  '& strong': {
+                                    fontWeight: 600
+                                  },
+                                  '& em': {
+                                    fontStyle: 'italic'
+                                  },
+                                  '& h1, & h2, & h3, & h4, & h5, & h6': {
+                                    marginTop: 1,
+                                    marginBottom: 0.5,
+                                    fontWeight: 600
+                                  },
+                                  '& blockquote': {
+                                    borderLeft: '3px solid',
+                                    borderColor: 'divider',
+                                    paddingLeft: 1,
+                                    marginLeft: 0,
+                                    marginBottom: 1,
+                                    fontStyle: 'italic'
+                                  }
+                                }}
+                              >
+                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              </Box>
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: 'white',
+                                  whiteSpace: 'pre-wrap'
+                                }}
+                              >
+                                {msg.content}
+                              </Typography>
+                            )}
+                            <Box sx={{ display: 'flex', justifyContent: msg.role === 'assistant' ? 'flex-start' : 'space-between', alignItems: 'center', mt: 1, gap: 1 }}>
+                              {msg.role === 'assistant' && (
+                                <IconButton
+                                  size="small"
+                                  className="copy-button"
+                                  onClick={() => handleCopyMessage(msg.content, `msg-${msg.id}`)}
+                                  sx={{
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    p: 0.5,
+                                    minWidth: 'auto',
+                                    width: 24,
+                                    height: 24,
+                                    color: 'text.secondary',
+                                    ml: -3.5,
+                                    '&:hover': {
+                                      bgcolor: 'action.hover',
+                                      color: 'text.primary'
+                                    }
+                                  }}
+                                >
+                                  {copiedMessageId === `msg-${msg.id}` ? (
+                                    <Check size={14} />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                </IconButton>
+                              )}
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: msg.role === 'user' ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary',
+                                  display: 'block',
+                                  textAlign: msg.role === 'assistant' ? 'left' : 'right',
+                                  ...(msg.role === 'assistant' && { ml: msg.role === 'assistant' ? 0.5 : -3.5 })
+                                }}
+                              >
+                                {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </Typography>
+                              {msg.role === 'user' && (
+                                <IconButton
+                                  size="small"
+                                  className="copy-button"
+                                  onClick={() => handleCopyMessage(msg.content, `msg-${msg.id}`)}
+                                  sx={{
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    p: 0.5,
+                                    minWidth: 'auto',
+                                    width: 24,
+                                    height: 24,
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                      color: 'white'
+                                    }
+                                  }}
+                                >
+                                  {copiedMessageId === `msg-${msg.id}` ? (
+                                    <Check size={14} />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                </IconButton>
+                              )}
+                            </Box>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    </Box>
+                  ))}
+                  
+                  {/* Mensagem do usuário pendente */}
+                  {pendingUserMessage && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-end'
+                      }}
+                    >
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          maxWidth: { xs: '90%', sm: '85%', md: '60%' },
+                          px: { xs: 1.25, md: 2 },
+                          py: { xs: 1, md: 1.5 },
+                          borderRadius: 1,
+                          borderBottomRightRadius: 0,
+                          bgcolor: 'primary.main',
+                          position: 'relative',
+                          '&:hover .copy-button': {
+                            opacity: 1
+                          }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                          <Avatar sx={{ width: 20, height: 20, bgcolor: 'primary.light' }}>
+                            <User size={12} />
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: 'white',
+                                whiteSpace: 'pre-wrap'
+                              }}
+                            >
+                              {pendingUserMessage}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                  display: 'block'
+                                }}
+                              >
+                                {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                className="copy-button"
+                                onClick={() => handleCopyMessage(pendingUserMessage, 'pending-msg')}
+                                sx={{
+                                  opacity: 0,
+                                  transition: 'opacity 0.2s',
+                                  p: 0.5,
+                                  minWidth: 'auto',
+                                  width: 24,
+                                  height: 24,
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                  '&:hover': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                    color: 'white'
+                                  }
+                                }}
+                              >
+                                {copiedMessageId === 'pending-msg' ? (
+                                  <Check size={14} />
+                                ) : (
+                                  <Copy size={14} />
+                                )}
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    </Box>
+                  )}
+                  
+                  {/* Indicador de "IA está digitando" */}
+                  {isAiTyping && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-start'
+                      }}
+                    >
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          maxWidth: { xs: '90%', sm: '85%', md: '60%' },
+                          px: { xs: 1.25, md: 2 },
+                          py: { xs: 1, md: 1.5 },
+                          borderRadius: 1,
+                          borderBottomLeftRadius: 0,
+                          bgcolor: 'background.paper',
+                          border: 1,
+                          borderColor: 'divider'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                          <Avatar sx={{ width: 20, height: 20, bgcolor: 'action.disabledBackground' }}>
+                            <Bot size={12} />
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: 'text.secondary',
+                                fontStyle: 'italic'
+                              }}
+                            >
+                              Up IA está digitando...
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    </Box>
+                  )}
+                </>
+              ) : null}
+            </Stack>
             <div ref={messagesEndRef} />
-          </div>
+          </Box>
 
           {/* Input */}
-          <div className="bg-white border-t border-gray-200 p-4">
-            <div className="flex space-x-2">
-              <Input
+          {(currentConversation || isNewConversationReady) && (
+            <Paper elevation={0} sx={{ p: { xs: 1, md: 2 }, borderTop: 1, borderColor: 'divider', borderBottomLeftRadius: 0, flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', gap: { xs: 0.5, md: 1 }, alignItems: 'flex-end' }}>
+              <TextField
+                fullWidth
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Digite sua mensagem..."
-                disabled={isSending}
-                className="flex-1"
+                disabled={isSending || isAiTyping}
+                multiline
+                maxRows={4}
+                size="small"
+                sx={{
+                  '& .MuiInputBase-root': {
+                    fontSize: { xs: '0.875rem', md: '1rem' },
+                    px: { xs: 1, md: 1.5 }
+                  }
+                }}
               />
-              <Button
+              <IconButton
+                color="primary"
                 onClick={handleSendMessage}
-                disabled={!message.trim() || isSending}
+                disabled={!message.trim() || isSending || isAiTyping}
+                sx={{ alignSelf: 'flex-end', flexShrink: 0 }}
+                size="small"
               >
                 {isSending ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  <CircularProgress size={20} />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send size={20} />
                 )}
+                </IconButton>
+              </Box>
+            </Paper>
+          )}
+        </Box>
+        </Box>
+      </Box>
+
+      {/* Transcription Selection Dialog */}
+      <Dialog 
+        open={showTranscriptionDialog} 
+        onClose={handleCancelNewConversation}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Selecione uma Transcrição</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Selecione uma transcrição para usar como contexto da conversa com a IA
+          </Typography>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : audioFiles.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                Nenhuma transcrição disponível
+              </Typography>
+              <Button
+                variant="outlined"
+                sx={{ mt: 2 }}
+                onClick={() => {
+                  router.push('/upload');
+                  handleCancelNewConversation();
+                }}
+              >
+                Fazer Upload de Áudio
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Box>
+          ) : (
+            <List>
+              {audioFiles
+                .filter(file => file.status === 'completed')
+                .map((file) => (
+                  <ListItem key={file.id} disablePadding>
+                    <ListItemButton
+                      onClick={() => handleSelectTranscription(file.id)}
+                      sx={{
+                        borderRadius: 1,
+                        mb: 1,
+                        '&:hover': {
+                          bgcolor: 'action.hover'
+                        }
+                      }}
+                    >
+                      <ListItemIcon>
+                        <FileAudio size={20} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={file.file_name}
+                        secondary={`${new Date(file.uploaded_at).toLocaleDateString('pt-BR')}`}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelNewConversation}>Cancelar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Conversation Menu */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem onClick={handleRenameClick}>Renomear</MenuItem>
+        <MenuItem onClick={handleDeleteClick}>Deletar</MenuItem>
+      </Menu>
+
+      {/* Rename Dialog */}
+      <Dialog 
+        open={showRenameDialog} 
+        onClose={handleRenameCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Renomear Conversa</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Nome da conversa"
+            fullWidth
+            variant="outlined"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleRenameSubmit();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleRenameCancel}>Cancelar</Button>
+          <Button onClick={handleRenameSubmit} variant="contained" disabled={!renameValue.trim()}>
+            Salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </DashboardLayout>
+    </>
   );
 }
 
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column'
+        }}
+      >
+        <CircularProgress size={60} />
+        <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+          Carregando...
+        </Typography>
+      </Box>
     }>
       <ChatPageContent />
     </Suspense>
   );
 }
-
-
