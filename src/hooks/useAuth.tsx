@@ -42,6 +42,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
 
   const isAuthenticated = !!user;
 
@@ -55,15 +57,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const login = async (email: string, password: string) => {
+    // Prevent race condition with checkAuth
+    if (isCheckingAuth) {
+      // Wait a bit for checkAuth to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     try {
       setError(null);
+      setIsLoggingIn(true);
       setIsLoading(true);
+      
+      // Perform login
       await authService.login(email, password);
-      await loadUser();
+      
+      // Wait a small delay to ensure tokens are saved
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Load user with retry logic
+      await loadUser(true);
       setError(null); // Clear error on successful login
     } catch (error) {
       handleAuthError(error);
     } finally {
+      setIsLoggingIn(false);
       setIsLoading(false);
     }
   };
@@ -75,14 +92,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     first_name?: string,
     last_name?: string
   ) => {
+    // Prevent race condition with checkAuth
+    if (isCheckingAuth) {
+      // Wait a bit for checkAuth to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     try {
       setError(null);
+      setIsLoggingIn(true);
       setIsLoading(true);
+      
       await authService.register(email, password, username, first_name, last_name);
-      await loadUser();
+      
+      // Wait a small delay to ensure tokens are saved
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Load user with retry logic
+      await loadUser(true);
+      setError(null); // Clear error on successful register
     } catch (error) {
       handleAuthError(error);
     } finally {
+      setIsLoggingIn(false);
       setIsLoading(false);
     }
   };
@@ -137,25 +169,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const loadUser = async () => {
+  const loadUser = async (isAfterLogin: boolean = false, retryCount: number = 0) => {
     try {
       if (authService.isAuthenticated()) {
-        const userData = await authService.getCurrentUser();
+        const userData = await authService.getCurrentUser(isAfterLogin, retryCount);
         setUser(userData);
         setError(null); // Clear any previous errors on successful user load
       }
     } catch (error: any) {
       console.error('Failed to load user:', error);
+      
+      // If this is after login and we haven't retried yet, retry once
+      if (isAfterLogin && retryCount === 0) {
+        console.log('Retrying loadUser after login...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        return loadUser(true, 1);
+      }
+      
       // Only clear tokens if it's a session expired error, otherwise just clear user
+      // Don't propagate errors from loadUser as login errors - they are separate issues
       if (error?.message?.includes('Sessão expirada') || error?.message?.includes('Session expired')) {
         authService.logout();
       }
+      
+      // If this is after login, don't throw - login was successful, just user loading failed
+      // The user can still use the app, we just couldn't load their profile yet
+      if (isAfterLogin) {
+        console.warn('Login successful but failed to load user profile. User can still use the app.');
+        // Don't set user to null after successful login - keep the tokens
+        return;
+      }
+      
       setUser(null);
     }
   };
 
   const checkAuth = async () => {
+    // Prevent multiple simultaneous checkAuth calls
+    if (isCheckingAuth) {
+      return;
+    }
+    
+    // Don't check auth if user is currently logging in
+    if (isLoggingIn) {
+      return;
+    }
+    
     try {
+      setIsCheckingAuth(true);
       const authData = await authService.checkAuth();
       if (authData.auth !== 'Visitor' && authData.user) {
         setUser(authData.user);
@@ -165,6 +226,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Auth check failed:', error);
       setUser(null);
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 

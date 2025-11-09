@@ -243,8 +243,32 @@ class AuthService {
     return response;
   }
 
-  async getCurrentUser(): Promise<User> {
-    return this.request<User>('/get_user/');
+  async getCurrentUser(isAfterLogin: boolean = false, retryCount: number = 0): Promise<User> {
+    const maxRetries = isAfterLogin ? 2 : 0;
+    
+    try {
+      return await this.request<User>('/get_user/');
+    } catch (error: any) {
+      // If this is after login and we haven't exceeded retries, retry with delay
+      if (isAfterLogin && retryCount < maxRetries) {
+        console.log(`Retrying getCurrentUser (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+        // Wait progressively longer for each retry
+        await new Promise(resolve => setTimeout(resolve, 100 * (retryCount + 1)));
+        return this.getCurrentUser(true, retryCount + 1);
+      }
+      
+      // If it's a 401 after login, it might be a token sync issue - don't clear tokens immediately
+      if (isAfterLogin && error?.message && !error.message.includes('Sessão expirada')) {
+        // Give it one more chance after a longer delay
+        if (retryCount === 0) {
+          console.log('Token might not be synced yet, retrying after longer delay...');
+          await new Promise(resolve => setTimeout(resolve, 300));
+          return this.getCurrentUser(true, retryCount + 1);
+        }
+      }
+      
+      throw error;
+    }
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
