@@ -1,7 +1,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { NoIndex } from '@/components/NoIndex';
@@ -41,6 +42,7 @@ import {
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [statistics, setStatistics] = useState<DashboardStatistics | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export default function DashboardPage() {
     if (user) {
       loadStatistics();
     }
-  }, [user]);
+  }, [user, pathname]);
 
   const loadStatistics = async () => {
     try {
@@ -95,7 +97,7 @@ export default function DashboardPage() {
       icon: Upload,
       color: 'primary.main',
       bgColor: 'rgba(59, 130, 246, 0.08)',
-      action: () => router.push('/upload'),
+      href: '/upload',
       primary: true,
     },
     {
@@ -104,7 +106,7 @@ export default function DashboardPage() {
       icon: MessageCircle,
       color: 'secondary.main',
       bgColor: 'rgba(139, 92, 246, 0.08)',
-      action: () => router.push('/chat'),
+      href: '/chat',
     },
     {
       title: 'Análises Avançadas',
@@ -112,7 +114,7 @@ export default function DashboardPage() {
       icon: BarChart3,
       color: 'success.main',
       bgColor: 'rgba(16, 185, 129, 0.08)',
-      action: () => router.push('/analytics'),
+      href: '/analytics',
     },
   ];
 
@@ -226,18 +228,18 @@ export default function DashboardPage() {
                 const Icon = action.icon;
                 return (
                   <Grid item xs={12} md={4} key={index}>
-                    <Card
-                      sx={{
-                        height: '100%',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: 6
-                        }
-                      }}
-                      onClick={action.action}
-                    >
+                    <Link href={action.href} style={{ textDecoration: 'none' }}>
+                      <Card
+                        sx={{
+                          height: '100%',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: 6
+                          }
+                        }}
+                      >
                       <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                         <Stack spacing={2}>
                           <Avatar
@@ -269,6 +271,7 @@ export default function DashboardPage() {
                         </Stack>
                       </CardContent>
                     </Card>
+                    </Link>
                   </Grid>
                 );
               })}
@@ -297,28 +300,25 @@ export default function DashboardPage() {
                   {statistics && statistics.recent_activity.length > 0 ? (
                     <Stack spacing={2}>
                       {statistics.recent_activity.map((activity, index) => (
-                        <Box
+                        <Link
                           key={index}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            p: 2,
-                            borderRadius: 0.5,
-                            backgroundColor: 'action.hover',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              backgroundColor: 'chain.selected'
-                            }
-                          }}
-                          onClick={() => {
-                            if (activity.type === 'audio') {
-                              router.push(`/transcription/${activity.id}`);
-                            } else if (activity.type === 'conversation') {
-                              router.push(`/chat`);
-                            }
-                          }}
+                          href={activity.type === 'audio' ? `/transcription/${activity.id}` : '/chat'}
+                          style={{ textDecoration: 'none', color: 'inherit' }}
                         >
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              p: 2,
+                              borderRadius: 0.5,
+                              backgroundColor: 'action.hover',
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: 'chain.selected'
+                              }
+                            }}
+                          >
                           <Box
                             sx={{
                               width: 8,
@@ -341,7 +341,8 @@ export default function DashboardPage() {
                             color={activity.status === 'completed' ? 'success' : activity.status === 'failed' ? 'error' : 'info'}
                             size="small"
                           />
-                        </Box>
+                          </Box>
+                        </Link>
                       ))}
                     </Stack>
                   ) : (

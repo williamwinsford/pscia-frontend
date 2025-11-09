@@ -298,17 +298,6 @@ export default function LoginPage() {
                         }}
                       />
 
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                          component={Link}
-                          href="/forgot-password"
-                          variant="text"
-                          size="small"
-                          sx={{ color: 'primary.main' }}
-                        >
-                          Esqueceu a senha?
-                        </Button>
-                      </Box>
 
                       <Button
                         type="submit"

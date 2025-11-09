@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useAudio } from '@/hooks/useAudio';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { NoIndex } from '@/components/NoIndex';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -41,7 +42,14 @@ export default function UploadPage() {
     getStatusText
   } = useAudio();
   const router = useRouter();
+  const pathname = usePathname();
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    if (user && pathname === '/upload') {
+      loadAudioFiles();
+    }
+  }, [user, pathname, loadAudioFiles]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     clearError();
@@ -306,13 +314,14 @@ export default function UploadPage() {
                           />
                           
                           {file.status === 'completed' && (
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => router.push(`/transcription/${file.id}`)}
-                            >
-                              Ver Transcrição
-                            </Button>
+                            <Link href={`/transcription/${file.id}`} style={{ textDecoration: 'none' }}>
+                              <Button
+                                variant="contained"
+                                size="small"
+                              >
+                                Ver Transcrição
+                              </Button>
+                            </Link>
                           )}
                         </Box>
                       </Box>

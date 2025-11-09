@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { NoIndex } from '@/components/NoIndex';
 import {
@@ -35,12 +36,13 @@ import {
 export default function AnalyticsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, pathname]);
 
   if (authLoading) {
     return (
@@ -192,33 +194,36 @@ export default function AnalyticsPage() {
                 />
                 <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                   <Stack spacing={2}>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      startIcon={<BarChart size={20} />}
-                      onClick={() => router.push('/history')}
-                      sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
-                    >
-                      Ver Transcrições
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<TrendingUp size={20} />}
-                      onClick={() => router.push('/upload')}
-                      sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
-                    >
-                      Nova Transcrição
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<MessageCircle size={20} />}
-                      onClick={() => router.push('/chat')}
-                      sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
-                    >
-                      Chat com IA
-                    </Button>
+                    <Link href="/history" style={{ textDecoration: 'none' }}>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        startIcon={<BarChart size={20} />}
+                        sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+                      >
+                        Ver Transcrições
+                      </Button>
+                    </Link>
+                    <Link href="/upload" style={{ textDecoration: 'none' }}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<TrendingUp size={20} />}
+                        sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+                      >
+                        Nova Transcrição
+                      </Button>
+                    </Link>
+                    <Link href="/chat" style={{ textDecoration: 'none' }}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<MessageCircle size={20} />}
+                        sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}
+                      >
+                        Chat com IA
+                      </Button>
+                    </Link>
                   </Stack>
                 </CardContent>
               </Card>

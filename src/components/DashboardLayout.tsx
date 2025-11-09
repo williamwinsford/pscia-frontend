@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -165,7 +165,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
     handleNotificationsMenuClose();
     if (notification.action_url) {
-      router.push(notification.action_url);
+      if (typeof window !== 'undefined') {
+        window.location.href = notification.action_url;
+      } else {
+        router.push(notification.action_url);
+      }
     }
   };
 
@@ -263,7 +267,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           return (
             <ListItem key={item.name} disablePadding sx={{ mb: 0.5, px: 2 }}>
               <ListItemButton
-                onClick={() => router.push(item.href)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (pathname !== item.href) {
+                    // Usar window.location como fallback para garantir navegação
+                    if (typeof window !== 'undefined') {
+                      window.location.href = item.href;
+                    } else {
+                      router.push(item.href);
+                    }
+                  }
+                }}
                 sx={{
                   borderRadius: 1,
                   backgroundColor: active ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
@@ -469,7 +483,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <MenuItem 
                       onClick={() => {
                         handleNotificationsMenuClose();
-                        router.push('/notifications');
+                        if (typeof window !== 'undefined') {
+                          window.location.href = '/notifications';
+                        } else {
+                          router.push('/notifications');
+                        }
                       }}
                       sx={{ justifyContent: 'center', fontWeight: 600 }}
                     >
@@ -503,7 +521,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               sx: { minWidth: 200, mt: 1 }
             }}
           >
-            <MenuItem onClick={() => { router.push('/profile'); handleUserMenuClose(); }}>
+            <MenuItem 
+              onClick={() => {
+                handleUserMenuClose();
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/profile';
+                } else {
+                  router.push('/profile');
+                }
+              }}
+            >
               <User size={18} style={{ marginRight: 8 }} />
               Perfil
             </MenuItem>
