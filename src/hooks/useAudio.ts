@@ -39,12 +39,16 @@ export const useAudio = () => {
   };
 
   // Audio file management
-  const uploadAudio = useCallback(async (file: File, language: string = 'pt-BR') => {
+  const uploadAudio = useCallback(async (
+    file: File, 
+    language: string = 'pt-BR',
+    onProgress?: (progress: number) => void
+  ) => {
     setIsLoading(true);
     clearError();
     
     try {
-      const uploadedFile = await audioService.uploadAudio(file, language);
+      const uploadedFile = await audioService.uploadAudio(file, language, onProgress);
       setAudioFiles(prev => [uploadedFile, ...prev]);
       return uploadedFile;
     } catch (error) {
@@ -66,6 +70,69 @@ export const useAudio = () => {
       handleError(error);
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  // Função para atualizar silenciosamente apenas os arquivos que mudaram
+  const updateAudioFilesSilently = useCallback(async () => {
+    try {
+      const files = await audioService.getAudioFiles();
+      
+      // Comparar e atualizar apenas os arquivos que mudaram
+      setAudioFiles(prevFiles => {
+        // Criar um mapa dos arquivos atuais por ID para comparação rápida
+        const currentFilesMap = new Map(prevFiles.map(f => [f.id, f]));
+        
+        // Verificar se houve mudanças comparando cada arquivo
+        let hasChanges = false;
+        
+        // Verificar se a lista mudou (novos arquivos, arquivos removidos, ou ordem diferente)
+        if (prevFiles.length !== files.length) {
+          hasChanges = true;
+        } else {
+          // Comparar cada arquivo
+          for (const newFile of files) {
+            const currentFile = currentFilesMap.get(newFile.id);
+            
+            // Se arquivo não existe ou alguma propriedade relevante mudou
+            if (!currentFile || 
+                currentFile.status !== newFile.status ||
+                currentFile.file_name !== newFile.file_name ||
+                currentFile.duration !== newFile.duration ||
+                currentFile.file_size !== newFile.file_size) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+        
+        // Só atualizar se houver mudanças - isso evita re-renders desnecessários
+        if (!hasChanges) {
+          return prevFiles;
+        }
+        
+        // Se houve mudanças, criar novo array mantendo referências dos arquivos que não mudaram
+        const updatedFiles = files.map(newFile => {
+          const currentFile = currentFilesMap.get(newFile.id);
+          
+          // Se o arquivo não existe ou mudou alguma propriedade relevante, usar o novo
+          if (!currentFile || 
+              currentFile.status !== newFile.status ||
+              currentFile.file_name !== newFile.file_name ||
+              currentFile.duration !== newFile.duration ||
+              currentFile.file_size !== newFile.file_size) {
+            return newFile;
+          }
+          
+          // Se não mudou, manter o arquivo atual (preserva referência para evitar re-render)
+          return currentFile;
+        });
+        
+        return updatedFiles;
+      });
+    } catch (error) {
+      // Silenciosamente falhar - não mostrar erro para o usuário durante polling
+      console.error('Erro ao atualizar arquivos silenciosamente:', error);
     }
   }, []);
 
@@ -276,6 +343,7 @@ export const useAudio = () => {
     // Actions
     uploadAudio,
     loadAudioFiles,
+    updateAudioFilesSilently,
     deleteAudioFile,
     getTranscription,
     startConversation,

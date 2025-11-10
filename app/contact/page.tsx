@@ -59,7 +59,7 @@ const faqs = [
   },
   {
     question: 'Quais formatos de áudio são suportados?',
-    answer: 'Suportamos MP3, WAV, M4A, FLAC e outros formatos populares de áudio.'
+    answer: 'Suportamos MP3, MPEG, WAV, M4A, FLAC e outros formatos populares de áudio.'
   },
   {
     question: 'Meus dados estão seguros?',

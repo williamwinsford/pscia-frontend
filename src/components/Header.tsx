@@ -28,14 +28,13 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useSidebarContext } from '@/contexts/SidebarContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export function Header() {
   const { user, logout, isLoading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
   const { toggleMobile } = useSidebarContext();
   const { theme, changeTheme } = useTheme();
@@ -56,7 +55,7 @@ export function Header() {
   const handleLogout = async () => {
     await logout();
     handleMenuClose();
-    router.push('/');
+    window.location.href = '/';
   };
 
   const handleMobileMenuToggle = () => {
@@ -172,7 +171,7 @@ export function Header() {
                     </Typography>
                   </Box>
                   <Divider />
-                  <MenuItem onClick={() => { router.push('/profile'); handleMenuClose(); }}>
+                  <MenuItem onClick={() => { window.location.href = '/profile'; handleMenuClose(); }}>
                     <Settings size={16} style={{ marginRight: 8 }} />
                     Configurações
                   </MenuItem>
@@ -392,7 +391,7 @@ export function Header() {
                   </Typography>
                 </Box>
                 <Button
-                  onClick={() => { router.push('/profile'); setMobileMenuOpen(false); }}
+                  onClick={() => { window.location.href = '/profile'; setMobileMenuOpen(false); }}
                   sx={{ color: 'white', justifyContent: 'flex-start', py: 1.5 }}
                   startIcon={<Settings size={20} />}
                 >

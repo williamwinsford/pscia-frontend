@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,13 +43,12 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, logout, isLoading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
     }

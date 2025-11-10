@@ -177,53 +177,108 @@ class AudioService {
   }
 
   // Audio file management
-  async uploadAudio(file: File, language: string = 'pt-BR'): Promise<AudioFile> {
+  async uploadAudio(
+    file: File, 
+    language: string = 'pt-BR',
+    onProgress?: (progress: number) => void
+  ): Promise<AudioFile> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('language', language);
 
     let token = this.getAccessToken();
     
-    try {
-      let response = await fetch(`${this.baseURL}/upload/`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
 
-      // Handle 401 - token expired
-      if (response.status === 401) {
-        await this.refreshAccessToken();
-        token = this.getAccessToken();
-        
-        // Retry with new token
-        response = await fetch(`${this.baseURL}/upload/`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
+      // Track upload progress
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            onProgress(percentComplete);
+          }
         });
       }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.detail || 'Upload failed');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      // Redirect to login if token refresh failed
-      if (error.message?.includes('Session expired') || error.message?.includes('Failed to refresh')) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+      xhr.addEventListener('load', async () => {
+        // Handle 401 - token expired
+        if (xhr.status === 401) {
+          try {
+            await this.refreshAccessToken();
+            token = this.getAccessToken();
+            
+            // Retry with new token
+            const retryXhr = new XMLHttpRequest();
+            if (onProgress) {
+              retryXhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                  const percentComplete = Math.round((e.loaded / e.total) * 100);
+                  onProgress(percentComplete);
+                }
+              });
+            }
+            
+            retryXhr.addEventListener('load', () => {
+              if (retryXhr.status >= 200 && retryXhr.status < 300) {
+                try {
+                  const data = JSON.parse(retryXhr.responseText);
+                  resolve(data);
+                } catch (e) {
+                  reject(new Error('Failed to parse response'));
+                }
+              } else {
+                try {
+                  const errorData = JSON.parse(retryXhr.responseText);
+                  reject(new Error(errorData.error || errorData.detail || 'Upload failed'));
+                } catch (e) {
+                  reject(new Error('Upload failed'));
+                }
+              }
+            });
+            
+            retryXhr.addEventListener('error', () => {
+              reject(new Error('Network error'));
+            });
+            
+            retryXhr.open('POST', `${this.baseURL}/upload/`);
+            retryXhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            retryXhr.send(formData);
+          } catch (refreshError) {
+            console.error('Failed to refresh token:', refreshError);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            reject(new Error('Sessão expirada. Por favor, faça login novamente.'));
+          }
+          return;
         }
-      }
-      throw error;
-    }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (e) {
+            reject(new Error('Failed to parse response'));
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new Error(errorData.error || errorData.detail || 'Upload failed'));
+          } catch (e) {
+            reject(new Error('Upload failed'));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error'));
+      });
+
+      xhr.open('POST', `${this.baseURL}/upload/`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    });
   }
 
   async getAudioFiles(): Promise<AudioFile[]> {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, startTransition } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
 import {
@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import packageJson from '../../package.json';
 
 const DRAWER_WIDTH = 280;
 
@@ -121,7 +122,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notificationsMenuAnchor, setNotificationsMenuAnchor] = useState<null | HTMLElement>(null);
   
   const { user, logout } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
   const { 
     notifications,
@@ -146,7 +146,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    window.location.href = '/';
   };
 
   const handleNotificationsMenuOpen = async (event: React.MouseEvent<HTMLElement>) => {
@@ -165,11 +165,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
     handleNotificationsMenuClose();
     if (notification.action_url) {
-      if (typeof window !== 'undefined') {
-        window.location.href = notification.action_url;
-      } else {
-        router.push(notification.action_url);
-      }
+      window.location.href = notification.action_url;
     }
   };
 
@@ -270,12 +266,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 onClick={(e) => {
                   e.preventDefault();
                   if (pathname !== item.href) {
-                    // Usar window.location como fallback para garantir navegação
-                    if (typeof window !== 'undefined') {
-                      window.location.href = item.href;
-                    } else {
-                      router.push(item.href);
-                    }
+                    window.location.href = item.href;
                   }
                 }}
                 sx={{
@@ -302,6 +293,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           );
         })}
       </List>
+
+      <Divider />
+
+      {/* Version */}
+      <Box 
+        sx={{ 
+          px: 2, 
+          py: 1.5, 
+          borderColor: 'divider',
+          backgroundColor: 'rgba(0, 0, 0, 0.02)'
+        }}
+      >
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.primary',
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            textAlign: 'center'
+          }}
+        >
+          Versão {packageJson.version}
+        </Typography>
+      </Box>
 
       <Divider />
 
@@ -483,11 +498,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <MenuItem 
                       onClick={() => {
                         handleNotificationsMenuClose();
-                        if (typeof window !== 'undefined') {
-                          window.location.href = '/notifications';
-                        } else {
-                          router.push('/notifications');
-                        }
+                        window.location.href = '/notifications';
                       }}
                       sx={{ justifyContent: 'center', fontWeight: 600 }}
                     >
@@ -524,11 +535,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <MenuItem 
               onClick={() => {
                 handleUserMenuClose();
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/profile';
-                } else {
-                  router.push('/profile');
-                }
+                window.location.href = '/profile';
               }}
             >
               <User size={18} style={{ marginRight: 8 }} />
@@ -546,7 +553,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Drawer */}
         <Box
           component="nav"
-          sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
+          sx={{ 
+            width: { xs: 0, md: 0 },
+            flexShrink: 0
+          }}
         >
         {/* Mobile Drawer */}
         <Drawer
@@ -594,14 +604,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             display: 'flex',
             flexDirection: 'column',
             flex: 1,
-            width: { md: `calc(100% - 240px)` },
-            ml: { md: '240px' },
-            minWidth: 0
+            width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` },
+            ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
+            minWidth: 0,
+            transition: 'margin-left 0.3s ease'
           }}
         >
-        <Box sx={{ flexGrow: 1, backgroundColor: 'grey.50', width: '100%' }}>
+        <Box sx={{ 
+          flexGrow: 1, 
+          backgroundColor: 'grey.50', 
+          width: '100%',
+          minWidth: 0,
+          overflow: 'hidden'
+        }}>
           <Toolbar />
-          <Box sx={{ width: '100%', pt: 4 }}>
+          <Box sx={{ 
+            width: '100%', 
+            pt: 4,
+            px: { xs: 2, sm: 3, md: 4, lg: 6 },
+            minWidth: 0,
+            boxSizing: 'border-box',
+            mx: 'auto',
+            maxWidth: '100%'
+          }}>
             {children}
           </Box>
         </Box>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { NoIndex } from '@/components/NoIndex';
@@ -35,14 +35,13 @@ import {
 
 export default function AnalyticsPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [user, authLoading, router, pathname]);
+  }, [user, authLoading, pathname]);
 
   if (authLoading) {
     return (

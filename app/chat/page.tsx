@@ -133,7 +133,7 @@ function ChatPageContent() {
           await loadConversations();
           
           // Limpar parâmetro da URL para evitar recriação
-          router.replace('/chat');
+          window.location.href = '/chat';
         } catch (error) {
           console.error('Error creating auto conversation:', error);
           // Resetar ref em caso de erro para permitir nova tentativa
@@ -335,7 +335,7 @@ function ChatPageContent() {
   }
 
   if (!user) {
-    router.push('/login');
+    window.location.href = '/login';
     return null;
   }
 
@@ -952,7 +952,7 @@ function ChatPageContent() {
                 variant="outlined"
                 sx={{ mt: 2 }}
                 onClick={() => {
-                  router.push('/upload');
+                  window.location.href = '/upload';
                   handleCancelNewConversation();
                 }}
               >

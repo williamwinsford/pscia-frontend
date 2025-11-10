@@ -272,11 +272,12 @@ class AuthService {
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
-    const response = await this.request<User>('/update_profile/', {
+    const response = await this.request<{ user: User; message?: string }>('/update_profile/', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response;
+    // Backend retorna { user: User, message: string }, então extraímos o user
+    return response.user || response;
   }
 
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {

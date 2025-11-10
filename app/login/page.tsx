@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
   Box, 
   Container, 
@@ -25,6 +24,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users } from 'lucide-react';
 import Image from 'next/image';
+import packageJson from '../../package.json';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -32,14 +32,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { user, isLoading: authLoading, login, error, clearError } = useAuth();
-  const router = useRouter();
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +47,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err) {
       // Error is handled by useAuth hook
     } finally {
@@ -338,6 +337,20 @@ export default function LoginPage() {
                       >
                         Cadastre-se aqui
                       </Button>
+                    </Typography>
+                  </Box>
+
+                  {/* Version - Discreta */}
+                  <Box sx={{ textAlign: 'center', mt: 3, pt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.05)' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: 'text.disabled',
+                        fontSize: '0.7rem',
+                        opacity: 0.6
+                      }}
+                    >
+                      Versão {packageJson.version}
                     </Typography>
                   </Box>
                 </CardContent>

@@ -17,7 +17,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 
 interface ExternalLayoutProps {
   children: React.ReactNode;
@@ -27,7 +26,6 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-  const router = useRouter();
 
   const isActive = (path: string) => pathname === path;
 
@@ -114,7 +112,7 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
               {user ? (
                 <Button
                   variant="contained"
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => window.location.href = '/dashboard'}
                   sx={{
                     background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                     color: 'white',
@@ -127,14 +125,14 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
                 <>
                   <Button
                     variant="text"
-                    onClick={() => router.push('/login')}
+                    onClick={() => window.location.href = '/login'}
                     sx={{ fontWeight: 500 }}
                   >
                     Entrar
                   </Button>
                   <Button
                     variant="contained"
-                    onClick={() => router.push('/register')}
+                    onClick={() => window.location.href = '/register'}
                     sx={{
                       background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                       color: 'white',
@@ -200,7 +198,7 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
                     fullWidth
                     variant="contained"
                     onClick={() => {
-                      router.push('/dashboard');
+                      window.location.href = '/dashboard';
                       setMobileMenuOpen(false);
                     }}
                     sx={{
@@ -217,7 +215,7 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
                       fullWidth
                       variant="outlined"
                       onClick={() => {
-                        router.push('/login');
+                        window.location.href = '/login';
                         setMobileMenuOpen(false);
                       }}
                     >
@@ -227,7 +225,7 @@ export const ExternalLayout = ({ children }: ExternalLayoutProps) => {
                       fullWidth
                       variant="contained"
                       onClick={() => {
-                        router.push('/register');
+                        window.location.href = '/register';
                         setMobileMenuOpen(false);
                       }}
                       sx={{

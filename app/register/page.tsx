@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
   Box, 
   Container, 
@@ -44,7 +43,6 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { register, error, clearError } = useAuth();
-  const router = useRouter();
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -69,7 +67,7 @@ export default function RegisterPage() {
         formData.firstName,
         formData.lastName
       );
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err) {
       // Error is handled by useAuth hook
     } finally {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { NoIndex } from '@/components/NoIndex';
@@ -79,7 +78,6 @@ const getNotificationTypeConfig = (type: string) => {
 
 export default function NotificationsPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -97,9 +95,9 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (user) {
@@ -131,7 +129,7 @@ export default function NotificationsPage() {
       await handleMarkAsRead(notification.id);
     }
     if (notification.action_url) {
-      router.push(notification.action_url);
+      window.location.href = notification.action_url;
     }
   };
 
@@ -174,11 +172,10 @@ export default function NotificationsPage() {
       <DashboardLayout>
       <Box
         sx={{
-          maxWidth: '1200px',
+          maxWidth: { xs: '100%', md: '1400px', lg: '1600px' },
           py: 2,
-          px: { xs: 2, md: 4 },
-          pl: { xs: 2, md: 45 },
-          width: '100%'
+          width: '100%',
+          mx: 'auto'
         }}
       >
         {/* Header */}

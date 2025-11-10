@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAudio } from '@/hooks/useAudio';
 import { useAuth } from '@/hooks/useAuth';
 import { useTemplates } from '@/hooks/useTemplates';
@@ -76,7 +76,6 @@ function TabPanel(props: TabPanelProps) {
 
 export default function TranscriptionPage() {
   const params = useParams();
-  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { 
     getTranscription, 
@@ -113,9 +112,9 @@ export default function TranscriptionPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (audioFileId && user) {
@@ -587,7 +586,7 @@ export default function TranscriptionPage() {
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
                 A transcrição solicitada não foi encontrada.
               </Typography>
-              <Button variant="contained" onClick={() => router.push('/upload')}>
+              <Button variant="contained" onClick={() => window.location.href = '/upload'}>
                 Voltar para Upload
               </Button>
             </CardContent>
@@ -606,7 +605,7 @@ export default function TranscriptionPage() {
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton onClick={() => router.back()} size="small">
+              <IconButton onClick={() => window.history.back()} size="small">
                 <ArrowLeft size={20} />
               </IconButton>
               <Box>
@@ -638,7 +637,7 @@ export default function TranscriptionPage() {
               <Button
                 variant="contained"
                 startIcon={<MessageCircle size={16} />}
-                onClick={() => router.push(`/chat?audio=${audioFileId}`)}
+                onClick={() => window.location.href = `/chat?audio=${audioFileId}`}
               >
                 Chat com IA
               </Button>

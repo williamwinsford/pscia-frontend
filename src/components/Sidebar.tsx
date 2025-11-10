@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Box,
@@ -49,7 +49,6 @@ const menuItems = [
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { mobileOpen, setMobileOpen } = useSidebarContext();
   const { logout } = useAuth();
   const [menuAnchor, setMenuAnchor] = React.useState<null | HTMLElement>(null);
@@ -63,7 +62,7 @@ export function Sidebar({ user }: SidebarProps) {
   };
 
   const handleProfile = () => {
-    router.push('/profile');
+    window.location.href = '/profile';
     handleMenuClose();
     setMobileOpen(false);
   };
@@ -72,7 +71,7 @@ export function Sidebar({ user }: SidebarProps) {
     await logout();
     handleMenuClose();
     setMobileOpen(false);
-    router.push('/');
+    window.location.href = '/';
   };
 
   const drawerContent = (
@@ -147,6 +146,29 @@ export function Sidebar({ user }: SidebarProps) {
           </ListItem>
         ))}
       </List>
+
+      {/* Version */}
+      <Box 
+        sx={{ 
+          px: 2, 
+          py: 1.5, 
+          borderTop: '0.5px solid', 
+          borderColor: 'divider',
+          backgroundColor: 'rgba(0, 0, 0, 0.02)'
+        }}
+      >
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.primary',
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            textAlign: 'center'
+          }}
+        >
+          Versão 0.0.0
+        </Typography>
+      </Box>
 
       {/* User Section */}
       <Box sx={{ borderTop: 1, borderColor: 'divider' }}>

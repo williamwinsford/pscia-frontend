@@ -40,7 +40,7 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
     // Validate file type
     const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/m4a', 'audio/ogg'];
     if (!allowedTypes.includes(file.type)) {
-      setErrorMessage('Tipo de arquivo não suportado. Por favor, envie arquivos MP3, WAV, M4A ou OGG.');
+      setErrorMessage('Tipo de arquivo não suportado. Por favor, envie arquivos MP3, MPEG, WAV, M4A ou OGG.');
       setUploadStatus('error');
       return;
     }
@@ -100,7 +100,7 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'audio/*': ['.mp3', '.wav', '.m4a', '.ogg']
+      'audio/*': ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg']
     },
     multiple: false,
     maxSize: 100 * 1024 * 1024 // 100MB
@@ -242,7 +242,7 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
               )}
               
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Suporta MP3, WAV, M4A, OGG • Máximo 100MB
+                Suporta MP3, MPEG, WAV, M4A, OGG • Máximo 100MB
               </Typography>
             </Box>
           </Box>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 import { NoIndex } from '@/components/NoIndex';
 import {
   Box,
@@ -30,8 +29,7 @@ import {
 import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading, logout } = useAuth();
-  const router = useRouter();
+  const { user, isLoading: authLoading, logout, updateProfile, changePassword } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -48,7 +46,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     } else if (user) {
       setProfileData({
         first_name: user.first_name || '',
@@ -59,7 +57,7 @@ export default function ProfilePage() {
         confirm_password: ''
       });
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   if (authLoading || isLoading) {
     return (
@@ -99,18 +97,34 @@ export default function ProfilePage() {
     }
 
     try {
-      // Aqui você faria a chamada à API para atualizar o perfil
-      // await authService.updateProfile(profileData);
-      
-      // Simular chamada à API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Preparar dados para atualização do perfil (sem senha)
+      const updateData: any = {
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+      };
+
+      // Atualizar perfil (nome e sobrenome)
+      await updateProfile(updateData);
+
+      // Se houver nova senha, atualizar separadamente
+      if (profileData.new_password && profileData.current_password) {
+        await changePassword(profileData.current_password, profileData.new_password);
+      }
 
       setSuccessMessage('Perfil atualizado com sucesso!');
       setIsEditing(false);
       
+      // Limpar campos de senha após sucesso
+      setProfileData(prev => ({
+        ...prev,
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      }));
+      
       setTimeout(() => setSuccessMessage(''), 5000);
-    } catch (error) {
-      setErrorMessage('Erro ao atualizar perfil. Tente novamente.');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Erro ao atualizar perfil. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

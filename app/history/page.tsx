@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 import { useAudio } from '@/hooks/useAudio';
 import { NoIndex } from '@/components/NoIndex';
 import {
@@ -33,12 +32,10 @@ import {
   Search
 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import Link from 'next/link';
 
 export default function HistoryPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
-  const { audioFiles, loadAudioFiles, deleteAudioFile, isLoading } = useAudio();
+  const { audioFiles, loadAudioFiles, updateAudioFilesSilently, deleteAudioFile, isLoading } = useAudio();
 
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -48,15 +45,37 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      window.location.href = '/login';
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (user) {
       loadAudioFiles();
     }
-  }, [user]);
+  }, [user, loadAudioFiles]);
+
+  // Polling para arquivos em processamento - atualiza silenciosamente apenas o que mudou
+  useEffect(() => {
+    // Verificar se há arquivos em processamento
+    const hasProcessingFiles = audioFiles.some(
+      file => file.status === 'processing' || file.status === 'uploading'
+    );
+
+    if (!hasProcessingFiles || !user) {
+      return;
+    }
+
+    // Configurar polling a cada 5 segundos - atualiza silenciosamente sem recarregar a página
+    const pollingInterval = setInterval(() => {
+      updateAudioFilesSilently();
+    }, 5000);
+
+    // Limpar intervalo quando componente desmontar ou não houver mais arquivos processando
+    return () => {
+      clearInterval(pollingInterval);
+    };
+  }, [audioFiles, user, updateAudioFilesSilently]);
 
   if (authLoading || isLoading) {
     return (
@@ -115,7 +134,9 @@ export default function HistoryPage() {
       case 'completed':
         return 'success';
       case 'processing':
+      case 'uploading':
         return 'info';
+      case 'failed':
       case 'error':
         return 'error';
       default:
@@ -129,6 +150,10 @@ export default function HistoryPage() {
         return 'Concluído';
       case 'processing':
         return 'Processando';
+      case 'uploading':
+        return 'Enviando';
+      case 'failed':
+        return 'Falhou';
       case 'error':
         return 'Erro';
       default:
@@ -149,11 +174,10 @@ export default function HistoryPage() {
       <DashboardLayout>
       <Box 
         sx={{ 
-          maxWidth: '1200px',
-          py: 2, 
-          px: { xs: 2, md: 4 },
-          pl: { xs: 2, md: 45 },
-          width: '100%'
+          maxWidth: { xs: '100%', md: '1400px', lg: '1600px' },
+          py: 2,
+          width: '100%',
+          mx: 'auto'
         }}
       >
           {/* Header */}
@@ -220,8 +244,7 @@ export default function HistoryPage() {
                 </Typography>
                 {!searchTerm && statusFilter === 'all' && (
                   <Button
-                    component={Link}
-                    href="/upload"
+                    onClick={() => window.location.href = '/upload'}
                     variant="contained"
                     size="large"
                   >
@@ -273,8 +296,7 @@ export default function HistoryPage() {
                           </Typography>
                           <CardActions sx={{ p: 0 }}>
                             <Button
-                              component={Link}
-                              href={`/transcription/${file.id}`}
+                              onClick={() => window.location.href = `/transcription/${file.id}`}
                               size="small"
                               startIcon={<Eye size={16} />}
                             >
@@ -284,12 +306,14 @@ export default function HistoryPage() {
                         </Box>
                       )}
 
-                      {file.status === 'processing' && (
+                      {(file.status === 'processing' || file.status === 'uploading') && (
                         <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(0, 0, 0, 0.1)' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <CircularProgress size={16} />
                             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              Processando... Isso pode levar alguns minutos.
+                              {file.status === 'uploading' 
+                                ? 'Upload em andamento...' 
+                                : 'Transcrição carregando... Isso pode levar alguns minutos.'}
                             </Typography>
                           </Box>
                         </Box>
@@ -306,9 +330,10 @@ export default function HistoryPage() {
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleCloseMenu}>
           {selectedFile && selectedFile.status === 'completed' && (
             <MenuItem
-              component={Link}
-              href={`/transcription/${selectedFile.id}`}
-              onClick={handleCloseMenu}
+              onClick={() => {
+                handleCloseMenu();
+                window.location.href = `/transcription/${selectedFile.id}`;
+              }}
             >
               <Eye size={18} style={{ marginRight: 8 }} />
               Visualizar

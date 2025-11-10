@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Box, CircularProgress, Typography } from '@mui/material';
 
@@ -15,15 +14,14 @@ interface RequireAuthProps {
  */
 export function RequireAuth({ children }: RequireAuthProps) {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     // Aguarda o carregamento da autenticação antes de verificar
     if (!isLoading && !user) {
       // Redireciona imediatamente para login
-      router.replace('/login');
+      window.location.href = '/login';
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
   // Mostra loading enquanto verifica autenticação
   if (isLoading) {

@@ -152,11 +152,10 @@ export default function DashboardPage() {
       <DashboardLayout>
       <Box 
         sx={{
-          maxWidth: '1200px',
+          maxWidth: { xs: '100%', md: '1400px', lg: '1600px' },
           py: 2,
-          px: { xs: 2, md: 4 },
-          pl: { xs: 2, md: 45 },
-          width: '100%'
+          width: '100%',
+          mx: 'auto'
         }}
       >
           {/* Header */}

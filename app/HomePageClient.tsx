@@ -26,19 +26,17 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 
 export default function HomePageClient() {
   const { user, isLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && user) {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
   if (isLoading) {
     return (
