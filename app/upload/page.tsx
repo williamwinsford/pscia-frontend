@@ -91,7 +91,8 @@ export default function UploadPage() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'audio/*': ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg', '.wma']
+      'audio/*': ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg', '.wma'],
+      'video/*': ['.mp4', '.avi', '.mov', '.mkv', '.webm']
     },
     maxSize: 100 * 1024 * 1024, // 100MB
     multiple: true,
@@ -113,10 +114,10 @@ export default function UploadPage() {
           {/* Header */}
           <Box sx={{ mb: 4 }}>
             <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-              Upload de Áudio
+              Upload de Áudio ou Vídeo
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Faça upload de seus arquivos de áudio para transcrição e análise
+              Faça upload de seus arquivos de áudio ou vídeo para transcrição e análise
             </Typography>
           </Box>
 
@@ -129,8 +130,8 @@ export default function UploadPage() {
           {/* Upload Area */}
           <Card sx={{ mb: 4 }}>
             <CardHeader
-              title="Arraste e solte seus arquivos de áudio"
-              subheader="Formatos suportados: MP3, MPEG, WAV, M4A, OGG, WMA (máximo 100MB)"
+              title="Arraste e solte seus arquivos de áudio ou vídeo"
+              subheader="Formatos suportados: Áudio (MP3, MPEG, WAV, M4A, OGG, WMA) e Vídeo (MP4, AVI, MOV, MKV, WebM) - máximo 100MB"
             />
             <CardContent>
               <Paper
@@ -173,7 +174,7 @@ export default function UploadPage() {
                 ) : (
                   <Stack spacing={2}>
                     <Typography variant="body1" color="text.secondary">
-                      Arraste arquivos de áudio aqui ou clique para selecionar
+                      Arraste arquivos de áudio ou vídeo aqui ou clique para selecionar
                     </Typography>
                     <Button variant="outlined" sx={{ mx: 'auto' }}>
                       Selecionar Arquivos

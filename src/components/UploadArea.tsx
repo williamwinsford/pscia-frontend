@@ -38,9 +38,15 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/m4a', 'audio/ogg'];
-    if (!allowedTypes.includes(file.type)) {
-      setErrorMessage('Tipo de arquivo não suportado. Por favor, envie arquivos MP3, MPEG, WAV, M4A ou OGG.');
+    const allowedTypes = [
+      'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/m4a', 'audio/ogg',
+      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'
+    ];
+    const allowedExtensions = ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg', '.mp4', '.avi', '.mov', '.mkv', '.webm'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      setErrorMessage('Tipo de arquivo não suportado. Por favor, envie arquivos de áudio (MP3, MPEG, WAV, M4A, OGG) ou vídeo (MP4, AVI, MOV, MKV, WebM).');
       setUploadStatus('error');
       return;
     }
@@ -100,7 +106,8 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'audio/*': ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg']
+      'audio/*': ['.mp3', '.mpeg', '.wav', '.m4a', '.ogg'],
+      'video/*': ['.mp4', '.avi', '.mov', '.mkv', '.webm']
     },
     multiple: false,
     maxSize: 100 * 1024 * 1024 // 100MB
@@ -220,7 +227,7 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
               </Box>
               
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                {isDragActive ? 'Solte o arquivo aqui' : 'Envie seu arquivo de áudio'}
+                {isDragActive ? 'Solte o arquivo aqui' : 'Envie seu arquivo de áudio ou vídeo'}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
                 Arraste e solte ou clique para selecionar
@@ -242,7 +249,7 @@ export const UploadArea = ({ onFileUploaded }: UploadAreaProps) => {
               )}
               
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Suporta MP3, MPEG, WAV, M4A, OGG • Máximo 100MB
+                Suporta áudio (MP3, MPEG, WAV, M4A, OGG) e vídeo (MP4, AVI, MOV, MKV, WebM) • Máximo 100MB
               </Typography>
             </Box>
           </Box>
